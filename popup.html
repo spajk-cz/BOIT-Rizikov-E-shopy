@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>BOIT Rizikové E-shopy</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- Header s BOIT logem -->
+  <div class="header">
+    <div class="logo" aria-label="BOIT">
+      <svg viewBox="0 0 560 177.093" xmlns="http://www.w3.org/2000/svg">
+        <rect x="67.9518" y="94.2674" width="43.3901" height="5.0654" fill="currentColor"/>
+        <rect x="67.9518" y="77.0452" width="43.3901" height="5.0654" fill="currentColor"/>
+        <path d="m129.2301,30H47.8626l-17.8627,17.8628v81.3674l17.8627,17.8625h81.3674l17.8628-17.8625V47.8628l-17.8628-17.8628Zm-20.4202,81.4895h-53.0142v-46.5985h53.0142c8.104,0,14.266,5.9098,14.266,13.1682,0,4.0514-1.9414,7.6807-4.9806,10.046,3.2927,2.4479,5.4027,6.0771,5.4027,10.2134,0,7.2612-6.5841,13.1709-14.6881,13.1709Z" fill="currentColor"/>
+        <rect x="195.5875" y="77.0452" width="41.1958" height="22.2876" fill="currentColor"/>
+        <path d="m256.8658,30h-81.3674l-17.8627,17.8628v81.3674l17.8627,17.8625h81.3674l17.8628-17.8625V47.8628l-17.8628-17.8628Zm-7.9258,66.8c0,8.1028-6.5841,14.6895-14.6895,14.6895h-36.1304c-8.1027,0-14.6881-6.5867-14.6881-14.6895v-17.2222c0-8.1028,6.5854-14.6869,14.6881-14.6869h36.1304c8.1053,0,14.6895,6.5841,14.6895,14.6869v17.2222Z" fill="currentColor"/>
+        <path d="m512.1373,30h-81.3677l-17.8625,17.8628v81.3674l17.8625,17.8625h81.3677l17.8628-17.8628V47.8628l-17.8628-17.8628Zm-8.2642,47.058h-26.3379v34.4418h-12.1567v-34.4418h-26.3379v-12.1567h64.8325v12.1567Z" fill="currentColor"/>
+        <path d="m384.5016,30h-81.3674l-17.8628,17.8628v81.3674l17.8628,17.8625h81.3674l17.8628-17.8628V47.8628l-17.8628-17.8628Zm-34.604,81.4946h-12.1567v-46.5985h12.1567v46.5985Z" fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="header-right">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-label" id="statusLabel">—</span>
+    </div>
+  </div>
+
+  <!-- Alert bar - jen při rizikovém webu -->
+  <div class="alert-bar">
+    <strong>Rizikový e-shop!</strong> Tato stránka je evidována v seznamu ČOI.
+  </div>
+
+  <!-- Aktuální stránka -->
+  <div class="site-block">
+    <div class="site-label">Aktuální stránka</div>
+    <div class="site-domain" id="siteDomain">—</div>
+    <div class="site-status" id="siteStatus">
+      <span id="siteStatusText">Zjišťuji...</span>
+    </div>
+  </div>
+
+  <!-- Info o seznamu -->
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-label">Seznam ČOI</div>
+      <div class="stat-value" id="domainCount">—</div>
+      <div class="stat-sub">sledovaných domén</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Aktuálnost</div>
+      <div class="stat-value stat-value-age" id="cacheAge">—</div>
+      <div class="stat-sub">stáří seznamu</div>
+    </div>
+  </div>
+
+  <!-- Osobní statistika -->
+  <div class="hero-stat">
+    <div class="hero-stat-label">BOIT tě ochránil</div>
+    <div class="hero-stat-value" id="statBlocks">0×</div>
+    <div class="hero-stat-sub"><span id="statUnique">0</span> unikátních rizikových domén</div>
+  </div>
+
+  <!-- Akce -->
+  <div class="actions">
+    <button class="btn btn-primary" id="refreshBtn">↺  Aktualizovat seznam</button>
+    <button class="btn btn-ghost" id="openCoiBtn">→  Otevřít seznam ČOI</button>
+  </div>
+
+  <!-- Whitelist -->
+  <div class="whitelist-block" id="whitelistBlock">
+    <div class="whitelist-head">
+      <div>
+        <div class="whitelist-label">Whitelist</div>
+        <div class="whitelist-note" id="whitelistNote">Ručně povolené domény</div>
+      </div>
+    </div>
+    <div class="whitelist-actions">
+      <button class="btn btn-ghost whitelist-action" id="whitelistAddBtn" type="button">↷  Povolit aktuální web na 24 h</button>
+      <button class="btn btn-danger whitelist-action" id="whitelistRemoveBtn" type="button">×  Odebrat aktuální web z whitelistu</button>
+    </div>
+    <div class="whitelist-empty" id="whitelistEmpty">Žádné ručně povolené domény.</div>
+    <div class="whitelist-list" id="whitelistList"></div>
+  </div>
+
+  <!-- Footer s hashtagem -->
+  <div class="footer">
+    <div class="footer-hashtag">#DělámeČeskoBezpečnější</div>
+    <div class="footer-link-row">
+      <span class="footer-sub">v1.6.3</span>
+      <span class="footer-link" id="boitLink">boit.cz →</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
