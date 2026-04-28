@@ -7,7 +7,7 @@
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-v1.6.3-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-FF2D78?style=for-the-badge)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-B44FE8?style=for-the-badge)](https://developer.chrome.com/docs/extensions/develop/migrate)
-[![Made by BOIT](https://img.shields.io/badge/Made%20by-BOIT%20Cyber%20Security-00F5FF?style=for-the-badge)](https://boit.cz)
+[![Made by BOIT](https://img.shields.io/badge/Made%20by-BOIT%20Cyber%20Security-D3FC23?style=for-the-badge)](https://boit.cz)
 
 ### \#DělámeČeskoBezpečnější
 
