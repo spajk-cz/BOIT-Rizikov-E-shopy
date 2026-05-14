@@ -6,7 +6,10 @@
 'use strict';
 
 // ─── Konstanty ──────────────────────────────────────────────────────────
-const COI_URL = 'https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/';
+const SOURCES = Object.freeze([
+  { name: 'COI', url: 'https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/' },
+  { name: 'SOI', url: 'https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody' }
+]);
 
 const STORAGE_KEYS = Object.freeze({
   DOMAINS:      'boit_rizikove_domains',
@@ -22,7 +25,8 @@ const MAX_DOMAIN_LENGTH = 253;
 const MAX_DOMAINS = 5000;
 
 const SAFELIST = Object.freeze(new Set([
-  'coi.gov.cz', 'gov.cz', 'seznam.cz', 'eset.com', 'toplist.cz',
+  'coi.gov.cz', 'gov.cz', 'soi.sk', 'gov.sk', 'slovensko.sk',
+  'seznam.cz', 'eset.com', 'toplist.cz',
   'google.com', 'facebook.com', 'mapy.cz', 'czso.cz'
 ]));
 
@@ -69,16 +73,50 @@ async function safeFetch(url, timeoutMs = FETCH_TIMEOUT) {
 
 // ─── Parser ─────────────────────────────────────────────────────────────
 
+/**
+ * Tries to extract a domain candidate from a single string token.
+ * Returns normalized hostname or null.
+ */
+function extractDomainFromToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  // Vyhodíme markdown linky [text](url) → vezmeme jen text
+  let t = token.replace(/\]\([^)]*\)/g, '').replace(/[\[\]]/g, '');
+  // Vyhodíme protokol a path
+  t = t.replace(/^https?:\/\//i, '').split('/')[0].split('?')[0].split('#')[0];
+  // Trim a normalize
+  const host = normalizeHostname(t.trim());
+  if (!isValidHostname(host)) return null;
+  if (SAFELIST.has(host)) return null;
+  return host;
+}
+
 function parseDomainsFromHtml(html) {
   const domains = new Set();
 
+  // 1) <p> bloky — typicky ČOI struktura
   const blockRegex = /<p[^>]*>\s*(?:https?:\/\/)?([a-z0-9][a-z0-9\-_.]+\.[a-z]{2,}(?:\/[^\s<]{0,80})?)\s*<\/p>/gi;
   let m;
   while ((m = blockRegex.exec(html)) !== null) {
-    const host = normalizeHostname((m[1] || '').split('/')[0]);
-    if (isValidHostname(host) && !SAFELIST.has(host)) domains.add(host);
+    const host = extractDomainFromToken(m[1]);
+    if (host) domains.add(host);
   }
 
+  // 2) <a> linky uvnitř <li> — typicky SOI struktura, kde text odkazu obsahuje doménu/y
+  //    Příklad: <a href="...">www.foo.sk, bar.sk [PDF, 198 KB]</a>
+  const linkRegex = /<a[^>]*>([^<]+)<\/a>/gi;
+  while ((m = linkRegex.exec(html)) !== null) {
+    const linkText = m[1];
+    // Vystřihneme [PDF...] / [DOCX...] suffix
+    const cleanText = linkText.replace(/\[(PDF|DOCX|DOC|XLS|XLSX)[^\]]*\]/gi, '').trim();
+    // Multi-domain: split po čárkách / středníkách / mezerách (jen pokud jsou tam tečky)
+    const tokens = cleanText.split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+    for (const tok of tokens) {
+      const host = extractDomainFromToken(tok);
+      if (host) domains.add(host);
+    }
+  }
+
+  // 3) Plaintext fallback — strip HTML, jdi po řádcích
   const stripped = html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
@@ -86,10 +124,14 @@ function parseDomainsFromHtml(html) {
 
   const lines = stripped.split('\n').map(l => l.trim()).filter(Boolean);
   for (const line of lines) {
-    if (line.length > 120) continue;
-    const candidate = normalizeHostname(line.replace(/^https?:\/\//i, '').split('/')[0]);
-    if (isValidHostname(candidate) && !SAFELIST.has(candidate)) {
-      domains.add(candidate);
+    if (line.length > 200) continue;
+    // Pokud obsahuje čárky, zkusíme split (multi-domain řádky z SOI)
+    const tokens = line.includes(',') ? line.split(',').map(s => s.trim()) : [line];
+    for (const tok of tokens) {
+      // Ignorujeme příliš dlouhé řádky ale po splitu už by měly být krátké
+      if (tok.length > 120) continue;
+      const host = extractDomainFromToken(tok);
+      if (host) domains.add(host);
     }
   }
 
@@ -98,22 +140,39 @@ function parseDomainsFromHtml(html) {
 
 // ─── Fetch & cache ──────────────────────────────────────────────────────
 
-async function fetchAndCacheDomains() {
+async function fetchOneSource(source) {
   try {
-    const html = await safeFetch(COI_URL);
+    const html = await safeFetch(source.url);
     const domains = parseDomainsFromHtml(html);
-    if (domains.length === 0) {
-      console.warn('[BOIT] Parser vrátil 0 domén — cache nepřepisuji.');
-      return;
-    }
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.DOMAINS]: domains,
-      [STORAGE_KEYS.CACHE_TS]: Date.now()
-    });
-    console.log('[BOIT] Uloženo ' + domains.length + ' domén.');
+    console.log('[BOIT] ' + source.name + ': ' + domains.length + ' domén');
+    return domains;
   } catch (e) {
-    console.error('[BOIT] Fetch chyba:', e.message || e);
+    console.error('[BOIT] ' + source.name + ' fetch chyba:', e.message || e);
+    return [];
   }
+}
+
+async function fetchAndCacheDomains() {
+  // Paralelně všechny zdroje
+  const results = await Promise.all(SOURCES.map(fetchOneSource));
+
+  // Merge do unique setu
+  const merged = new Set();
+  for (const arr of results) {
+    for (const d of arr) merged.add(d);
+  }
+
+  if (merged.size === 0) {
+    console.warn('[BOIT] Žádný zdroj nevrátil domény — cache nepřepisuji.');
+    return;
+  }
+
+  const domains = [...merged].slice(0, MAX_DOMAINS);
+  await chrome.storage.local.set({
+    [STORAGE_KEYS.DOMAINS]: domains,
+    [STORAGE_KEYS.CACHE_TS]: Date.now()
+  });
+  console.log('[BOIT] Celkem uloženo ' + domains.length + ' unikátních domén (ČOI + SOI).');
 }
 
 async function refreshIfNeeded() {
@@ -151,7 +210,7 @@ async function isWhitelisted(hostname) {
   const list = r[STORAGE_KEYS.WHITELIST] || {};
   const entry = list[hostname];
   if (!entry) return false;
-  if (entry.until < Date.now()) {
+  if (entry.until && entry.until < Date.now()) {
     delete list[hostname];
     await chrome.storage.local.set({ [STORAGE_KEYS.WHITELIST]: list });
     return false;
@@ -164,8 +223,7 @@ async function addWhitelist(hostname, ttlMs) {
   if (!isValidHostname(host)) return false;
   const r = await chrome.storage.local.get([STORAGE_KEYS.WHITELIST]);
   const list = r[STORAGE_KEYS.WHITELIST] || {};
-  const safeTtl = (typeof ttlMs === 'number' && ttlMs > 0) ? ttlMs : 24 * 3600 * 1000;
-  list[host] = { until: Date.now() + safeTtl };
+  list[host] = { until: ttlMs ? Date.now() + ttlMs : null };
   await chrome.storage.local.set({ [STORAGE_KEYS.WHITELIST]: list });
   return true;
 }
@@ -201,9 +259,13 @@ async function removeWhitelist(hostname) {
   return existed;
 }
 
-function buildCoiMailto(hostname, signals) {
+function buildReportMailto(hostname, signals, email) {
   const host = normalizeHostname(hostname);
   if (!isValidHostname(host)) return null;
+
+  // Default email pokud nebyl předán nebo je neplatný
+  const ALLOWED_EMAILS = new Set(['podatelna@coi.gov.cz', 'info@soi.sk']);
+  const reportEmail = ALLOWED_EMAILS.has(email) ? email : 'podatelna@coi.gov.cz';
 
   const safeSignals = Array.isArray(signals)
     ? signals
@@ -221,7 +283,7 @@ function buildCoiMailto(hostname, signals) {
     '\n\nDěkuji.'
   );
 
-  return 'mailto:podatelna@coi.gov.cz?subject=' + subject + '&body=' + body;
+  return 'mailto:' + reportEmail + '?subject=' + subject + '&body=' + body;
 }
 
 // ─── Ikonka ─────────────────────────────────────────────────────────────
@@ -367,7 +429,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     case 'REPORT_COI': {
-      const mailtoUrl = buildCoiMailto(msg.hostname, msg.signals);
+      const mailtoUrl = buildReportMailto(msg.hostname, msg.signals, msg.email);
       if (!mailtoUrl) {
         sendResponse({ ok: false, error: 'invalid_hostname' });
         return false;

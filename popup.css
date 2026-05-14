@@ -197,6 +197,11 @@ body.risky .hero-stat-value { color: var(--pink); }
   border-bottom: 1px solid var(--border);
 }
 
+.btn-row {
+  display: flex;
+  gap: 7px;
+}
+
 .btn {
   width: 100%;
   padding: 10px 12px;
@@ -211,6 +216,12 @@ body.risky .hero-stat-value { color: var(--pink); }
   align-items: center;
   gap: 8px;
   transition: all 0.15s;
+}
+
+.btn-half {
+  flex: 1;
+  width: auto;
+  justify-content: center;
 }
 
 .btn-primary {

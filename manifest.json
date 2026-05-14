@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "BOIT Rizikové E-shopy",
   "short_name": "BOIT Rizikové E-shopy",
-  "version": "1.6.3",
-  "description": "Varuje vás při návštěvě rizikových e-shopů ze seznamu České obchodní inspekce. Navíc detekuje další podvodné signály.",
+  "version": "1.7.0",
+  "description": "Varuje vás při návštěvě rizikových e-shopů ze seznamů ČOI (CZ) a SOI (SK). Navíc detekuje další podvodné signály.",
   "author": "BOIT Cyber Security s.r.o.",
   "homepage_url": "https://boit.cz",
   "minimum_chrome_version": "110",
@@ -14,7 +14,8 @@
     "tabs"
   ],
   "host_permissions": [
-    "https://coi.gov.cz/*"
+    "https://coi.gov.cz/*",
+    "https://www.soi.sk/*"
   ],
 
   "background": {
@@ -55,6 +56,6 @@
   },
 
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://coi.gov.cz;"
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://coi.gov.cz https://www.soi.sk;"
   }
 }

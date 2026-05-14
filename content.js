@@ -99,17 +99,17 @@
     // ── 1) Vytvoříme HOST element (jen prázdný kontejner, vše uvnitř shadow DOM) ──
     const HOST_ID = '__boit_host';
     const BLUR_STYLE_ID = '__boit_blur_style';
-    const DESIRED_HOST_STYLE = [
+
+    let host = document.createElement('div');
+    host.id = HOST_ID;
+    // Inline styling hostu jen jako fallback, primární layout řešíme uvnitř shadow DOM
+    host.setAttribute('style', [
       'all: initial',
       'position: fixed',
       'inset: 0',
       'z-index: 2147483647',
       'pointer-events: auto'
-    ].join(' !important;') + ' !important;';
-
-    let host = document.createElement('div');
-    host.id = HOST_ID;
-    host.setAttribute('style', DESIRED_HOST_STYLE);
+    ].join(' !important;') + ' !important;');
 
     // ── 2) Closed Shadow DOM — stránka se dovnitř nedostane přes querySelector ──
     // Reference na shadow root držíme jen v closure, nikde nepřiřazujeme na host ani globál.
@@ -172,6 +172,12 @@
     const btnProceed = card.querySelector('.js-btn-proceed');
     const btnReport  = card.querySelector('.js-btn-report');
 
+    // Dynamický label tlačítka "Nahlásit" — SOI pro .sk, ČOI pro ostatní
+    if (btnReport) {
+      const reportTo = hostname.endsWith('.sk') ? 'SOI' : 'ČOI';
+      setText(btnReport, '⚑ Nahlásit ' + reportTo);
+    }
+
     // isTrusted check — ignorujeme syntetické click() z console / page scriptu
     const trustedHandler = (fn) => (ev) => {
       if (!ev || !ev.isTrusted) return;
@@ -196,10 +202,17 @@
     }));
 
     btnReport.addEventListener('click', trustedHandler(() => {
+      // Pokud je doména .sk, nahlásíme na SOI; jinak na ČOI
+      const isSk = hostname.endsWith('.sk');
+      const reportEmail = isSk ? 'info@soi.sk' : 'podatelna@coi.gov.cz';
+      const reportAuthority = isSk ? 'SOI' : 'ČOI';
+
       chrome.runtime.sendMessage({
         type: 'REPORT_COI',
         hostname,
-        signals: (signals || []).map(s => ({ title: s.title }))
+        signals: (signals || []).map(s => ({ title: s.title })),
+        email: reportEmail,
+        authority: reportAuthority
       }, (res) => {
         if (chrome.runtime.lastError || !res || !res.ok) {
           const subject = encodeURIComponent('Podezřelý e-shop: ' + hostname);
@@ -210,7 +223,7 @@
             ((signals && signals.length) ? signals.map(s => '- ' + s.title).join('\n') : '(žádná automatická detekce)') +
             '\n\nDěkuji.'
           );
-          window.open('mailto:podatelna@coi.gov.cz?subject=' + subject + '&body=' + body, '_blank', 'noopener');
+          window.open('mailto:' + reportEmail + '?subject=' + subject + '&body=' + body, '_blank', 'noopener');
         }
       });
     }));
@@ -256,8 +269,9 @@
       }
       // Pokud někdo nastavil display:none / visibility:hidden přes attribut style, přepíšeme
       // (style se nedá uvnitř closed shadow DOM zničit, ale host samotný má atribut style)
-      if (host.getAttribute('style') !== DESIRED_HOST_STYLE) {
-        host.setAttribute('style', DESIRED_HOST_STYLE);
+      const desired = host.getAttribute('data-boit-style');
+      if (desired && host.getAttribute('style') !== desired) {
+        host.setAttribute('style', desired);
       }
     }
 
@@ -293,7 +307,8 @@
       } catch (e) {}
     }
 
-    // ── 7) Append ──
+    // ── 7) Append a uložení požadovaného stylu pro porovnání v observeru ──
+    host.setAttribute('data-boit-style', host.getAttribute('style'));
 
     const append = () => {
       ensureBlurStyle();
@@ -330,7 +345,7 @@
       '</div>',
 
       '<div class="boit-desc">',
-        'Tato doména je v oficiálním seznamu <strong>České obchodní inspekce</strong>. ',
+        'Tato doména je v oficiálním seznamu rizikových e-shopů <strong>České obchodní inspekce</strong> nebo <strong>Slovenskej obchodnej inšpekcie</strong>. ',
         'Provozovatel není ověřitelný nebo neplní zákonné povinnosti.',
       '</div>',
 
@@ -353,13 +368,13 @@
           '</div>',
 
           '<div class="boit-note">',
-            'Zdroj: <span class="boit-link">coi.gov.cz/rizikove-e-shopy</span> · pravidelně aktualizováno ČOI. ',
+            'Zdroj: <span class="boit-link">coi.gov.cz</span> + <span class="boit-link">soi.sk</span> · pravidelně aktualizovaný seznam. ',
             'Zařazení je varováním, nikoli zákazem.',
           '</div>',
 
           '<div class="boit-actions-secondary">',
             '<button class="boit-btn-ghost js-btn-whitelist" type="button">↷ Povolit na 24 h</button>',
-            '<button class="boit-btn-ghost js-btn-report" type="button">⚑ Nahlásit ČOI</button>',
+            '<button class="boit-btn-ghost js-btn-report" type="button">⚑ Nahlásit</button>',
           '</div>',
 
         '</div>',
@@ -371,7 +386,7 @@
         '<div class="boit-hashtag">#DělámeČeskoBezpečnější</div>',
         '<div class="boit-footer-sub">BOIT Cyber Security · boit.cz/nastroje/podvodne-weby</div>',
       '</div>',
-      '<div class="boit-footer-right">v1.6.3</div>',
+      '<div class="boit-footer-right">v1.7.0</div>',
     '</div>'
   ].join('');
 

@@ -190,6 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.tabs.create({ url: 'https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/' });
   });
 
+  document.getElementById('openSoiBtn').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody' });
+  });
+
   document.getElementById('whitelistAddBtn').addEventListener('click', async () => {
     if (!currentHostname) return;
     await sendMessage({ type: 'WHITELIST_ADD', hostname: currentHostname, hours: 24 });
