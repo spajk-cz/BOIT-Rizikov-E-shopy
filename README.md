@@ -85,7 +85,7 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
 ### Lokální instalace (developer mode)
 
 ```bash
-git clone https://github.com/BOITCyberSecurity/rizikove-eshopy.git
+git clone  https://github.com/spajk-cz/BOIT-Rizikov-E-shopy.git
 ```
 
 1. Otevři `chrome://extensions/`
