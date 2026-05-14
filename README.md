@@ -80,7 +80,7 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
 
 ### Z Chrome Web Store (doporučeno)
 
-[
+[![Get on Chrome Web Store](https://img.shields.io/badge/Get%20it%20on-Chrome%20Web%20Store-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
 
 ### Lokální instalace (developer mode)
 
