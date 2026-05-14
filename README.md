@@ -1,6 +1,10 @@
 <div align="center">
 
-# 🛡️ BOIT Rizikové E-shopy
+<p>
+  <img src="https://lh3.googleusercontent.com/ljcAgmvfLT6gKeOU6OBVOw_YUWzP6s3M-pOJgrcx8i8KQM1d_UbZ5cO8NBHkWxwTIc535h4fKYCVbN3wlfT0WJ4k3A=s1600-w1600-h1000" alt="BOIT Rizikové E-shopy screenshot" width="100%" />
+</p>
+
+# BOIT Rizikové E-shopy
 
 **Prohlížečové rozšíření, které vás varuje před podvodnými e-shopy ze seznamů České obchodní inspekce (ČOI) a Slovenskej obchodnej inšpekcie (SOI) — a detekuje další podezřelé signály přímo na stránce.**
 
@@ -13,15 +17,15 @@
 
 </div>
 
----
+***
 
-## 📰 Psali o nás
+## Psali o nás
 
-> 🎉 **[Tento český doplněk do prohlížeče upozorní na pochybné e-shopy dříve, než přijdete o peníze](https://www.zive.cz/clanky/tento-cesky-doplnek-do-prohlizece-upozorni-na-pochybne-e-shopy-drive-nez-prijdete-o-penize/sc-3-a-240930/default.aspx)** *— Živě.cz*
+> **[Tento český doplněk do prohlížeče upozorní na pochybné e-shopy dříve, než přijdete o peníze](https://www.zive.cz/clanky/tento-cesky-doplnek-do-prohlizece-upozorni-na-pochybne-e-shopy-drive-nez-prijdete-o-penize/sc-3-a-240930/default.aspx)** *— Živě.cz*
 
----
+***
 
-## 🎯 O co jde
+## O co jde
 
 Před každýma Vánocema varujeme na školeních lidi před rizikovými e-shopy. Roky jsme k tomu používali databázi ČOI + jeden starší prohlížečový doplněk — ten ale dávno není udržovaný. Tak jsme postavili nový. A od verze 1.7 podporujeme i **slovenský trh** přes seznam SOI.
 
@@ -30,53 +34,53 @@ Před každýma Vánocema varujeme na školeních lidi před rizikovými e-shopy
 - 🇨🇿 [**Česká obchodní inspekce**](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/) (ČOI)
 - 🇸🇰 [**Slovenská obchodná inšpekcia**](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody) (SOI)
 
-Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varování. Plus k tomu navíc **detekuje další podvodné signály** — chybějící IČO, podezřelé TLD, jen bankovní převod, extrémní slevy a další.
+Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varování. Navíc rozšíření **detekuje další podvodné signály** — chybějící IČO, podezřelé TLD, jen bankovní převod, extrémní slevy a další.
 
 > Žádné trackery. Žádná analytika. Žádná data ven. Všechno běží lokálně ve vašem prohlížeči.
 
----
+***
 
-## ✨ Co umí
+## Co umí
 
-### 🔍 Detekce a varování
-- 🛑 **Kontrola proti seznamům ČOI a SOI** — porovnání domény při každé návštěvě
-- ⚡ **Výrazné varování** — blur stránky + neon overlay v BOIT designu
-- 🎯 **7 typů detekce podvodných signálů** přímo na stránce:
+### Detekce a varování
+- **Kontrola proti seznamům ČOI a SOI** — porovnání domény při každé návštěvě
+- **Výrazné varování** — blur stránky + neon overlay v BOIT designu
+- **7 typů detekce podvodných signálů** přímo na stránce:
   - Nešifrované spojení (HTTP)
   - Chybějící IČO provozovatele
   - Chybějící kontaktní e-mail / telefon
   - Chybějící obchodní podmínky / reklamační řád
   - Podezřelá TLD (`.top`, `.xyz`, `.click`, `.shop`, …)
   - Pouze bankovní převod jako forma platby
-  - Extrémní slevy (70 % a víc)
+  - Extrémní slevy (70% a víc)
 
-### 🎨 UI/UX
-- 🟢 **Dynamická ikonka v toolbaru** — zelená = ok, růžová s vykřičníkem = pozor
-- 📊 **Počítadlo ochrany** — kolikrát vás rozšíření varovalo (anonymně, lokálně)
-- 📂 **Rozbalovací detaily** — přehledné varování, podrobnosti pod „Více detailů"
-- 🎭 **Cyberpunk vizuál** — BOIT brand identity, JetBrains Mono, neon palette
+### UI/UX
+- **Dynamická ikonka v toolbaru** — zelená = ok, růžová s vykřičníkem = pozor
+- **Počítadlo ochrany** — kolikrát vás rozšíření varovalo (anonymně, lokálně)
+- **Rozbalovací detaily** — přehledné varování, podrobnosti pod „Více detailů"
+- **Cyberpunk vizuál** — BOIT brand identity, JetBrains Mono, neon palette
 
-### 🛠️ Akce
-- ⏸️ **Whitelist na 24 h** — pokud víte, že je web v pořádku
-- 📧 **Smart nahlášení podvodu** — `.sk` doména → SOI, ostatní → ČOI (jedním klikem, předvyplněný e-mail)
-- 🔄 **Automatická aktualizace seznamů** — paralelně oba zdroje každých 6 hodin
+### Akce
+- **Whitelist na 24 h** — pokud víte, že je web v pořádku
+- **Smart nahlášení podvodu** — `.sk` doména → SOI, ostatní → ČOI (jedním klikem, předvyplněný e-mail)
+- **Automatická aktualizace seznamů** — paralelně oba zdroje každých 6 hodin
 
-### 🔒 Bezpečnost a soukromí
-- 🚫 **Žádné trackery, žádná analytika, žádné reklamy**
-- 🏠 **Vše běží lokálně** — jediné síťové operace jsou stažení seznamů z `coi.gov.cz` a `soi.sk`
-- 🛡️ **Hardened proti bypass pokusům**:
+### Bezpečnost a soukromí
+- **Žádné trackery, žádná analytika, žádné reklamy**
+- **Vše běží lokálně** — jediné síťové operace jsou stažení seznamů z `coi.gov.cz` a `soi.sk`
+- **Hardened proti bypass pokusům**:
   - Closed Shadow DOM (`mode: 'closed'`) — stránka se nedostane k vnitřkům overlaye
   - MutationObserver — pokud stránka odstraní overlay, znovu se vloží
   - Blur přes injected `<style>` s `!important` — nelze přepsat z `element.style`
   - `isTrusted` validace na všech tlačítkách — synthetic clicks z page scriptu jsou ignorovány
 
----
+***
 
-## 📦 Instalace
+## Instalace
 
 ### Z Chrome Web Store (doporučeno)
 
-[![Get on Chrome Web Store](https://img.shields.io/badge/Get%20it%20on-Chrome%20Web%20Store-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
+[
 
 ### Lokální instalace (developer mode)
 
@@ -88,14 +92,14 @@ git clone https://github.com/BOITCyberSecurity/rizikove-eshopy.git
 2. Zapni **Developer mode** (vpravo nahoře)
 3. Klikni **Load unpacked**
 4. Vyber složku s rozbaleným repozitářem
-5. Hotovo ✓
+5. Hotovo
 
 Funguje na všech Chromium prohlížečích — **Chrome, Edge, Brave, Vivaldi, Opera, Arc**.
 Firefox verze je v plánu (Manifest V3 API se mírně liší).
 
----
+***
 
-## 🏗️ Pod kapotou
+## Pod kapotou
 
 ### Stack
 
@@ -106,7 +110,7 @@ Firefox verze je v plánu (Manifest V3 API se mírně liší).
 
 ### Architektura
 
-```
+```text
 boit-rizikove-eshopy/
 ├── manifest.json         # MV3 manifest, CSP, permissions
 ├── background.js         # Service worker — fetch, cache, message routing
@@ -119,7 +123,7 @@ boit-rizikove-eshopy/
 
 ### Datový tok
 
-```
+```text
 ┌─────────────┐                     ┌──────────────────┐
 │ coi.gov.cz  │ ──┐                 │                  │
 └─────────────┘   │  fetch každých  │ background.js    │
@@ -150,9 +154,9 @@ boit-rizikove-eshopy/
 | `host_permissions: www.soi.sk` | Stahování oficiálního seznamu SOI |
 | `content_scripts` na všech webech | Kontrola domény proti seznamům |
 
----
+***
 
-## 🔐 Privacy
+## Privacy
 
 **Tato extension nesbírá, neukládá ani nepřenáší žádné osobní údaje.** Všechna data zůstávají v prohlížeči.
 
@@ -160,37 +164,24 @@ Jediné síťové operace jsou stažení seznamů domén z `coi.gov.cz` a `www.s
 
 Plné znění viz [`PRIVACY.md`](PRIVACY.md).
 
----
+***
 
-## 🧪 Bypass test suite
-
-Chcete si ověřit, že hardening funguje? V repozitáři je `bypass-test.js` — open-source test suite, kterou si můžete pustit v konzoli na rizikovém e-shopu. Otestuje 7 různých pokusů obejít overlay (smazání hostu, blur reset, querySelector na tlačítka, syntetické clicky atd.). Všechny by měly selhat.
-
-```js
-// V konzoli na stránce s overlay
-fetch('https://raw.githubusercontent.com/BOITCyberSecurity/rizikove-eshopy/main/bypass-test.js')
-  .then(r => r.text())
-  .then(eval);
-```
-
----
-
-## 🤝 Contributing
+## Contributing
 
 PRs welcome! Pár pravidel:
 
-- 🔒 **Bezpečnost před features** — žádný kód co by snížil hardening overlaye
-- 📦 **Žádné runtime dependencies** — vanilla JS, žádné npm balíčky v extension build
-- 🧪 **Test bypass scénářů** — pokud měníš overlay, zkus si pustit `bypass-test.js`
+- **Bezpečnost před features** — žádný kód co by snížil hardening overlaye
+- **Žádné runtime dependencies** — vanilla JS, žádné npm balíčky v extension build
+- **Test bypass scénářů** — pokud měníš overlay, zkus si pustit `bypass-test.js`
 
 Issues a feature requesty vítány. Zvlášť pokud najdete:
 - Bypass overlaye, kterou jsme nezachytili
 - False-positive na legitimním e-shopu
 - Chybu v parseru ČOI / SOI seznamu
 
----
+***
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] **v1.0** — MVP: detekce + overlay
 - [x] **v1.5** — Heatmap signálů, počítadlo, report tlačítko
@@ -201,9 +192,9 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 - [ ] **v2.0** — Firefox port (Manifest V3)
 - [ ] **v2.x** — Crowdsourced report API (volitelný opt-in)
 
----
+***
 
-## 📋 Changelog
+## Changelog
 
 ### v1.7.0 (současná)
 - 🇸🇰 **Přidána podpora SOI** (Slovenská obchodná inšpekcia) jako druhý zdroj dat
@@ -221,36 +212,36 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 - Počítadlo "BOIT tě ochránil ×"
 - Report tlačítko s předvyplněným e-mailem
 
----
+***
 
-## 👥 Tým
+## Tým
 
 Vytvořeno v [BOIT Cyber Security s.r.o.](https://boit.cz) — etický hacking, penetrační testy, sociální inženýrství, školení.
 
 **Hlavní autor:** Pavel „Spajk" Matějíček ([LinkedIn](https://www.linkedin.com/in/spajk/) · [spajk.cz](https://spajk.cz))
 
-Posloucháte podcast **„Místo kyberčinu"** od O2? My ho děláme. 🎙️
+Posloucháte podcast **„Místo kyberčinu"** od O2? My ho děláme.
 
----
+***
 
-## 📜 License
+## License
 
 MIT — viz [`LICENSE`](LICENSE).
 
-To znamená: použij, fork, modifikuj, prodávej. Jen na nás laskavě nezapomeň. 🤝
+To znamená: použij, fork, modifikuj, prodávej. Jen na nás laskavě nezapomeň.
 
----
+***
 
-## 🌐 Links
+## Links
 
-- 🌍 **Web:** [boit.cz](https://boit.cz)
-- 🛠️ **Další BOIT nástroje:** [boit.cz/nastroje](https://boit.cz/nastroje)
-- 💼 **LinkedIn:** [BOIT Cyber Security](https://www.linkedin.com/company/boit-cz/)
-- 📧 **Kontakt:** info@boit.cz
-- 🇨🇿 **Zdroj dat (CZ):** [coi.gov.cz/rizikove-e-shopy](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/)
-- 🇸🇰 **Zdroj dat (SK):** [soi.sk/rizikove-internetove-obchody](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody)
+- **Web:** [boit.cz](https://boit.cz)
+- **Další BOIT nástroje:** [boit.cz/nastroje](https://boit.cz/nastroje)
+- **LinkedIn:** [BOIT Cyber Security](https://www.linkedin.com/company/boit-cz/)
+- **Kontakt:** [info@boit.cz](mailto:info@boit.cz)
+- **Zdroj dat (CZ):** [coi.gov.cz/rizikove-e-shopy](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/)
+- **Zdroj dat (SK):** [soi.sk/rizikove-internetove-obchody](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody)
 
----
+***
 
 <div align="center">
 
