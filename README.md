@@ -189,7 +189,7 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 - [x] **v1.7** — 🇸🇰 Slovenská obchodná inšpekcia (SOI) jako druhý zdroj dat
 - [ ] **v1.8** — Detekce typosquatu (Levenshtein vůči TOP 100 CZ/SK e-shopů)
 - [ ] **v1.9** — Whois lookup pro nedávno zaregistrované domény
-- [ ] **v2.0** — Firefox port (Manifest V3)
+- [x] **v2.0** — Firefox port (Manifest V3)
 - [ ] **v2.x** — Crowdsourced report API (volitelný opt-in)
 
 ***
@@ -201,6 +201,7 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 - 🔧 Refactored parser: nová strategie pro `<a>` link strukturu (SOI), multi-domain split po čárkách
 - 🎯 Smart routing nahlášení podvodu: `.sk` → SOI, ostatní → ČOI
 - 🎨 Popup UI: dva oddělené odkazy pro ČOI (CZ) a SOI (SK)
+- 🦊 Přidána podpora pro Firefox 140 a novější
 
 ### v1.6.x
 - Closed Shadow DOM hardening + MutationObserver
