@@ -9,6 +9,7 @@
 **Prohlížečové rozšíření, které vás varuje před podvodnými e-shopy ze seznamů České obchodní inspekce (ČOI) a Slovenskej obchodnej inšpekcie (SOI) — a detekuje další podezřelé signály přímo na stránce.**
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-v1.7.0-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
+[![Firefox Add-on](https://img.shields.io/badge/Firefox%20Add--on-v1.7.0-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-FF2D78?style=for-the-badge)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-B44FE8?style=for-the-badge)](https://developer.chrome.com/docs/extensions/develop/migrate)
 [![Made by BOIT](https://img.shields.io/badge/Made%20by-BOIT%20Cyber%20Security-D3FC23?style=for-the-badge)](https://boit.cz)
@@ -68,6 +69,7 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
 ### Bezpečnost a soukromí
 - **Žádné trackery, žádná analytika, žádné reklamy**
 - **Vše běží lokálně** — jediné síťové operace jsou stažení seznamů z `coi.gov.cz` a `soi.sk`
+- **Firefox AMO „no data collected" badge** — manifest deklaruje `data_collection_permissions: ["none"]`, takže Firefox uživateli při instalaci i v `about:addons` explicitně potvrzuje, že žádná data nesbíráme
 - **Hardened proti bypass pokusům**:
   - Closed Shadow DOM (`mode: 'closed'`) — stránka se nedostane k vnitřkům overlaye
   - MutationObserver — pokud stránka odstraní overlay, znovu se vloží
@@ -78,19 +80,25 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
 
 ## Instalace
 
-### Z Chrome Web Store (doporučeno)
+### Z Chrome Web Store
 
 [![Get on Chrome Web Store](https://img.shields.io/badge/Get%20it%20on-Chrome%20Web%20Store-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
 
-### Z addons.mozilla.org 🦊 (doporučeno) 
+Pro **Chrome, Edge, Brave, Vivaldi, Opera, Arc** a další Chromium prohlížeče.
 
-[![Firefox Add-on](https://img.shields.io/amo/v/boit-rizikov%C3%A9-e-shopy?label=Firefox%20Add-on&logo=firefox-browser&color=FF7139)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
+### Z addons.mozilla.org 🦊
+
+[![Firefox Add-on](https://img.shields.io/badge/Get%20it%20on-Firefox%20Add--ons-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
+
+Pro **Firefox 140+** (desktop) a **Firefox for Android 142+**.
 
 ### Lokální instalace (developer mode)
 
 ```bash
-git clone  https://github.com/spajk-cz/BOIT-Rizikov-E-shopy.git
+git clone https://github.com/spajk-cz/BOIT-Rizikov-E-shopy.git
 ```
+
+**Chrome / Chromium prohlížeče:**
 
 1. Otevři `chrome://extensions/`
 2. Zapni **Developer mode** (vpravo nahoře)
@@ -98,8 +106,12 @@ git clone  https://github.com/spajk-cz/BOIT-Rizikov-E-shopy.git
 4. Vyber složku s rozbaleným repozitářem
 5. Hotovo
 
-Funguje na všech Chromium prohlížečích — **Chrome, Edge, Brave, Vivaldi, Opera, Arc**.
-Firefox verze je v plánu (Manifest V3 API se mírně liší).
+**Firefox:**
+
+1. Otevři `about:debugging#/runtime/this-firefox`
+2. Klikni **Load Temporary Add-on…**
+3. Vyber soubor `manifest.json` v rozbaleném repozitáři
+4. Doplněk poběží do restartu prohlížeče (pro permanentní instalaci je třeba signed build z AMO)
 
 ***
 
@@ -107,9 +119,9 @@ Firefox verze je v plánu (Manifest V3 API se mírně liší).
 
 ### Stack
 
-- **Manifest V3** (vyžaduje Chrome 110+)
+- **Manifest V3** (Chrome 110+, Firefox 140+ desktop, Firefox for Android 142+)
 - **Vanilla JavaScript** (žádné build nástroje, žádné dependencies)
-- **Service Worker** pro background tasks
+- **Non-persistent background script** (service worker v Chromium, event page ve Firefoxu)
 - **Content Script** s isolated world + closed Shadow DOM
 
 ### Architektura
@@ -117,7 +129,7 @@ Firefox verze je v plánu (Manifest V3 API se mírně liší).
 ```text
 boit-rizikove-eshopy/
 ├── manifest.json         # MV3 manifest, CSP, permissions
-├── background.js         # Service worker — fetch, cache, message routing
+├── background.js         # Background — fetch, cache, message routing
 ├── content.js            # Detekce + injection overlay (hardened)
 ├── popup.html/css/js     # Toolbar popup UI
 ├── icons/                # Ikonky safe/risky × 4 velikosti
@@ -131,10 +143,10 @@ boit-rizikove-eshopy/
 ┌─────────────┐                     ┌──────────────────┐
 │ coi.gov.cz  │ ──┐                 │                  │
 └─────────────┘   │  fetch každých  │ background.js    │
-                  ├─ 6h,paralelně ─▶│ (service worker) │
-┌─────────────┐   │   Promise.all   │                  │
+                  ├─ 6h,paralelně ─▶│ (event page /    │
+┌─────────────┐   │   Promise.all   │  service worker) │
 │  soi.sk     │ ──┘                 └────────┬─────────┘
-└─────────────┘                              │ merge → chrome.storage.local
+└─────────────┘                              │ merge → storage.local
                                              ▼
 ┌─────────────┐  CHECK_DOMAIN       ┌──────────────────┐
 │ content.js  │ ──────────────────▶ │ message handler  │
@@ -190,11 +202,10 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 - [x] **v1.0** — MVP: detekce + overlay
 - [x] **v1.5** — Heatmap signálů, počítadlo, report tlačítko
 - [x] **v1.6** — Closed Shadow DOM hardening
-- [x] **v1.7** — 🇸🇰 Slovenská obchodná inšpekcia (SOI) jako druhý zdroj dat
+- [x] **v1.7** — 🇸🇰 SOI integrace + 🦊 Firefox / Firefox for Android port (Manifest V3)
 - [ ] **v1.8** — Detekce typosquatu (Levenshtein vůči TOP 100 CZ/SK e-shopů)
 - [ ] **v1.9** — Whois lookup pro nedávno zaregistrované domény
-- [x] **v2.0** — Firefox port (Manifest V3)
-- [ ] **v2.x** — Crowdsourced report API (volitelný opt-in)
+- [ ] **v2.0** — Crowdsourced report API (volitelný opt-in)
 
 ***
 
@@ -202,10 +213,11 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 
 ### v1.7.0 (současná)
 - 🇸🇰 **Přidána podpora SOI** (Slovenská obchodná inšpekcia) jako druhý zdroj dat
+- 🦊 **Firefox port** — doplněk dostupný i pro Firefox 140+ (desktop) a Firefox for Android 142+
+- 🔒 Firefox manifest deklaruje `data_collection_permissions: ["none"]` — explicitní "no data collected" badge v installeru
 - 🔧 Refactored parser: nová strategie pro `<a>` link strukturu (SOI), multi-domain split po čárkách
 - 🎯 Smart routing nahlášení podvodu: `.sk` → SOI, ostatní → ČOI
 - 🎨 Popup UI: dva oddělené odkazy pro ČOI (CZ) a SOI (SK)
-- 🦊 Přidána podpora pro Firefox 140 a novější
 
 ### v1.6.x
 - Closed Shadow DOM hardening + MutationObserver
