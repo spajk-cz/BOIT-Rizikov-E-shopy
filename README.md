@@ -37,6 +37,7 @@ Před každýma Vánocema varujeme na školeních lidi před rizikovými e-shopy
 
 Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varování. Navíc rozšíření **detekuje další podvodné signály** — chybějící IČO, podezřelé TLD, jen bankovní převod, extrémní slevy a další.
 
+***
 > Žádné trackery. Žádná analytika. Žádná data ven. Všechno běží lokálně ve vašem prohlížeči.
 
 ***
