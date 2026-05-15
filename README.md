@@ -82,6 +82,10 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
 
 [![Get on Chrome Web Store](https://img.shields.io/badge/Get%20it%20on-Chrome%20Web%20Store-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
 
+### Z addons.mozilla.org 🦊 (doporučeno) 
+
+[![Firefox Add-on](https://img.shields.io/amo/v/boit-rizikov%C3%A9-e-shopy?label=Firefox%20Add-on&logo=firefox-browser&color=FF7139)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
+
 ### Lokální instalace (developer mode)
 
 ```bash
