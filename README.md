@@ -131,7 +131,7 @@ boit-rizikove-eshopy/
 ┌─────────────┐                     ┌──────────────────┐
 │ coi.gov.cz  │ ──┐                 │                  │
 └─────────────┘   │  fetch každých  │ background.js    │
-                  ├─ 6h, paralelně ─▶│ (service worker) │
+                  ├─ 6h,paralelně ─▶│ (service worker) │
 ┌─────────────┐   │   Promise.all   │                  │
 │  soi.sk     │ ──┘                 └────────┬─────────┘
 └─────────────┘                              │ merge → chrome.storage.local
