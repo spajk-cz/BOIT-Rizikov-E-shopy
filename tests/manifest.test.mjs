@@ -4,13 +4,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { loadBackground, allSourcesOk, repoRoot, VARIANTS, BOIT_URL } from './harness.mjs';
+import { loadBackground, allSourcesOk, repoRoot, VARIANTS, BOIT_URL, CTU_URL } from './harness.mjs';
 
 const read = (relative) => readFileSync(`${repoRoot}${relative}`, 'utf8');
 const manifest = (variant) => JSON.parse(read(`${variant}/manifest.json`));
 
 const feedOrigin = new URL(BOIT_URL).origin;          // https://spajk-cz.github.io
 const feedHostPermission = `${feedOrigin}/*`;
+
+const ctuOrigin = new URL(CTU_URL).origin;            // https://ctu.gov.cz
+const ctuHostPermission = `${ctuOrigin}/*`;
 
 test('manifesty', async (t) => {
   for (const variant of VARIANTS) {
@@ -27,6 +30,8 @@ test('manifesty', async (t) => {
         `host_permissions musí obsahovat ${feedHostPermission}`);
       assert.ok(m.host_permissions.includes('https://coi.gov.cz/*'), 'ČOI se nesmí ztratit');
       assert.ok(m.host_permissions.includes('https://www.soi.sk/*'), 'SOI se nesmí ztratit');
+      assert.ok(m.host_permissions.includes(ctuHostPermission),
+        `host_permissions musí obsahovat ${ctuHostPermission}`);
     });
 
     await t.test(`${variant}: CSP connect-src obsahuje origin feedu`, () => {
@@ -34,12 +39,14 @@ test('manifesty', async (t) => {
       const connectSrc = csp.split(';').map(s => s.trim()).find(s => s.startsWith('connect-src'));
       assert.ok(connectSrc, 'connect-src musí existovat');
       assert.ok(connectSrc.split(/\s+/).includes(feedOrigin), `connect-src musí obsahovat ${feedOrigin}`);
+      assert.ok(connectSrc.split(/\s+/).includes(ctuOrigin), `connect-src musí obsahovat ${ctuOrigin}`);
     });
 
     await t.test(`${variant}: žádné rozvolnění oprávnění`, () => {
       const m = manifest(variant);
       const raw = JSON.stringify(m);
       assert.ok(!raw.includes('*.github.io'), 'žádný wildcard přes celý github.io');
+      assert.ok(!raw.includes('*.gov.cz'), 'žádný wildcard přes celý gov.cz');
       assert.ok(!raw.includes('raw.githubusercontent.com'), 'žádný alternativní host');
       assert.ok(!m.host_permissions.includes('<all_urls>'), 'žádný <all_urls>');
       assert.deepEqual([...m.permissions].sort(), ['alarms', 'storage', 'tabs'],
@@ -95,26 +102,49 @@ test('feed URL je v kódu i v manifestu shodná', async (t) => {
         'fetch URL musí ležet pod originem z manifestu');
       assert.ok(m.host_permissions.includes(feedHostPermission));
       assert.ok(m.content_security_policy.extension_pages.includes(feedOrigin));
+
+      // Každý zdroj musí mít v manifestu pokrytý svůj origin.
+      for (const source of bg.SOURCES) {
+        const origin = new URL(source.url).origin;
+        assert.ok(source.url.startsWith('https://'), `${source.name} musí být přes HTTPS`);
+        assert.ok(m.host_permissions.some(p => p === origin + '/*'),
+          `${source.name}: chybí host permission pro ${origin}`);
+        assert.ok(m.content_security_policy.extension_pages.includes(origin),
+          `${source.name}: chybí ${origin} v connect-src`);
+      }
     });
   }
 });
 
-test('texty nemluví o BOIT jako o úřadu', async (t) => {
+test('text varování odpovídá tomu, který seznam doménu vede', async (t) => {
   for (const variant of VARIANTS) {
     await t.test(variant, () => {
       const content = read(`${variant}/content.js`);
       const popup = read(`${variant}/popup.html`);
 
-      assert.ok(!content.includes('oficiálním seznamu'),
-        'tvrzení o oficiálním seznamu neplatí pro BOIT záznamy');
       assert.ok(!content.includes('Provozovatel není ověřitelný'),
         'automatické tvrzení o provozovateli neplatí bez dalšího dokazování');
       assert.ok(!content.includes('ČOI · Rizikový e-shop'), 'eyebrow musí být obecný');
       assert.ok(!popup.includes('evidována v seznamu ČOI'), 'popup nesmí tvrdit jen ČOI');
 
-      // Nový text musí zmínit všechny tři zdroje.
-      for (const name of ['ČOI', 'SOI', 'BOIT']) {
-        assert.ok(content.includes(name), `overlay musí zmínit ${name}`);
+      // Popis se skládá až za běhu podle zdroje shody, v markupu je jen prázdné místo.
+      assert.ok(content.includes('js-desc'), 'popis musí mít vlastní slot v markupu');
+      assert.ok(!content.includes('<div class="boit-desc">'),
+        'popis už nesmí být napevno v markupu');
+
+      // ČTÚ: faktické znění, žádný "podvodný e-shop".
+      assert.ok(content.includes('Tato stránka je uvedena na oficiálním seznamu blokovaných webů '),
+        'ČTÚ musí mít faktické znění');
+      assert.ok(content.includes('nelegální nabídku léčiv'),
+        'u ČTÚ musí být zřejmé, že nejde jen o e-shopy');
+
+      // BOIT se nesmí vydávat za úřední seznam.
+      const boitLine = content.split('\n').find(l => l.trim().startsWith('BOIT: ['));
+      assert.ok(boitLine, 'popis BOIT zdroje musí existovat');
+      assert.ok(!/oficiáln/i.test(boitLine), 'BOIT seznam není oficiální seznam úřadu');
+
+      for (const name of ['ČOI', 'SOI', 'ČTÚ', 'BOIT']) {
+        assert.ok(content.includes(name), `overlay musí umět zmínit ${name}`);
       }
     });
   }

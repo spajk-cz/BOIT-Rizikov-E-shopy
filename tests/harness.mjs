@@ -20,6 +20,8 @@ const EXPORTED = [
   'parseDomainsFromHtml', 'isValidBoitFeedDomain', 'parseDomainsFromBoitFeed',
   'fetchOneSource', 'normalizeSourceCache', 'loadSourceCache', 'computeCacheTs',
   'mergeSourceCache', 'fetchAndCacheDomains', 'refreshIfNeeded', 'REPORT_PAGE_URL',
+  'parseCsvRows', 'hostnameFromCtuUrl', 'parseDomainsFromCtuCsv', 'matchingSources', 'riskySet',
+  'MAX_BOIT_FEED_DOMAINS', 'MAX_CSV_BYTES',
   'isWhitelisted', 'addWhitelist', 'getWhitelist', 'removeWhitelist',
 ];
 
@@ -34,6 +36,7 @@ const clone = plain;
 
 export const COI_URL = 'https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/';
 export const SOI_URL = 'https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody';
+export const CTU_URL = 'https://ctu.gov.cz/vyhledavaci-databaze/blokovane-weby/csv';
 export const BOIT_URL = 'https://spajk-cz.github.io/boit-risk-feed/blacklist.txt';
 
 /** Odpověď fetch mocku. */
@@ -181,10 +184,11 @@ export function loadBackground(variant, options = {}) {
 export const feed = (...lines) => ['# BOIT risk feed v1', ...lines].join('\n') + '\n';
 
 /** Všechny tři zdroje odpovídají úspěšně. */
-export function allSourcesOk({ coi, soi, boit } = {}) {
+export function allSourcesOk({ coi, soi, ctu, boit } = {}) {
   return {
     [COI_URL]: reply(coi ?? readFixture('coi.html')),
     [SOI_URL]: reply(soi ?? readFixture('soi.html')),
+    [CTU_URL]: reply(ctu ?? readFixture('ctu.csv')),
     [BOIT_URL]: reply(boit ?? feed()),
   };
 }

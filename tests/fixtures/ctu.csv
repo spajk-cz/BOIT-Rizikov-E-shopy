@@ -1,0 +1,15 @@
+URL,DATUM_ZAPISU,DATUM_VYMAZU,ZDROJ,NAZEV_DATOVE_SADY
+aktivni-hazard.example,2017-07-26,,Ministerstvo financí,Seznam nepovolených internetových her
+vymazany.example,2017-07-26,2023-01-04,Ministerstvo financí,Seznam nepovolených internetových her
+https://se-schematem.example/,2020-01-01,,Ministerstvo financí,Seznam nepovolených internetových her
+http://www.s-www.example,2020-01-01,,Státní ústav pro kontrolu léčiv,Seznam stránek s nelegální nabídkou léčivých přípravků
+legitimni-web.example/clanek/online-casino,2021-05-05,,Ministerstvo financí,Seznam nepovolených internetových her
+https://jiny-web.example/cs/,2021-05-06,,Ministerstvo financí,Seznam nepovolených internetových her
+mezinárodní.example,2021-06-06,,Ministerstvo financí,Seznam nepovolených internetových her
+seznam.cz,2021-06-07,,Ministerstvo financí,Seznam nepovolených internetových her
+aktivni-hazard.example,2022-01-01,,Ministerstvo financí,Seznam nepovolených internetových her
+"quoted-host.example",2022-02-02,,"Ministerstvo financí, odbor 34",Seznam nepovolených internetových her
+javascript:alert(1),2022-03-03,,Ministerstvo financí,Seznam nepovolených internetových her
+203.0.113.10,2022-04-04,,Ministerstvo financí,Seznam nepovolených internetových her
+,2022-05-05,,Ministerstvo financí,Seznam nepovolených internetových her
+s-dotazem.example/?id=1,2022-06-06,,Ministerstvo financí,Seznam nepovolených internetových her

@@ -2,9 +2,10 @@
 
 Kontakt: **doplnek@boit.cz**
 
-Doplněk **BOIT Rizikové E-shopy** porovnává navštívené weby se třemi seznamy —
+Doplněk **BOIT Rizikové E-shopy** porovnává navštívené weby se čtyřmi seznamy —
 [ČOI](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/),
-[SOI](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody)
+[SOI](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody),
+[ČTÚ](https://ctu.gov.cz/vyhledavaci-databaze/blokovane-weby)
 a vlastním [BOIT seznamem](https://github.com/spajk-cz/boit-risk-feed).
 Na tuto adresu můžete psát obojí: nahlášení nové domény i žádost o vyřazení.
 
@@ -43,8 +44,11 @@ a změna je veřejně dohledatelná v historii repozitáře
 [boit-risk-feed](https://github.com/spajk-cz/boit-risk-feed/commits/main/blacklist.txt).
 
 **Důležité:** odebrat umíme jen záznamy z **BOIT seznamu**. Pokud je doména vedená
-u ČOI nebo SOI, musíte se obrátit přímo na příslušný úřad — my do jejich seznamů
-nijak nezasahujeme a doplněk je bude dál zobrazovat.
+u ČOI, SOI nebo ČTÚ, musíte se obrátit přímo na příslušný úřad — my do jejich seznamů
+nijak nezasahujeme a doplněk je bude dál zobrazovat. U seznamu ČTÚ je příslušným
+místem orgán, který záznam zapsal — u nepovolených internetových her Ministerstvo
+financí, u léčivých přípravků Státní ústav pro kontrolu léčiv. Konkrétní záznam
+i jeho zdroj najdete ve [veřejné databázi ČTÚ](https://ctu.gov.cz/vyhledavaci-databaze/blokovane-weby).
 
 ## Chci to vyřešit hned sám
 

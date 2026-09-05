@@ -2,7 +2,7 @@
 
 ## BOIT Rizikové E-shopy (Chrome extension)
 
-**Poslední aktualizace:** 5. 9. 2026 (verze 1.8.0)
+**Poslední aktualizace:** 5. 9. 2026 (verze 1.9.0)
 
 ---
 
@@ -14,7 +14,7 @@ Tato extension **nesbírá, neukládá ani nepřenáší žádné osobní údaje
 
 Extension ukládá **lokálně v prohlížeči** (přes `chrome.storage.local`) pouze:
 
-- **Seznamy rizikových domén** stažené od ČOI, SOI a BOIT
+- **Seznamy rizikových domén** stažené od ČOI, SOI, ČTÚ a BOIT
 - **Časové razítko** posledního úspěšného načtení, zvlášť pro každý zdroj
 - **Anonymní počítadlo** — kolikrát vás extension varovala a kolik unikátních rizikových domén to bylo
 - **Váš whitelist** — domény, které jste si ručně povolil(a)
@@ -23,10 +23,11 @@ Tato data **nikdy neopouštějí váš prohlížeč**.
 
 ### Síťová komunikace
 
-Extension stahuje periodicky (každých 6 hodin) tři seznamy domén:
+Extension stahuje periodicky (každých 6 hodin) čtyři seznamy domén:
 
 - **`https://coi.gov.cz`** — seznam rizikových e-shopů České obchodní inspekce
 - **`https://www.soi.sk`** — seznam rizikových internetových obchodů Slovenskej obchodnej inšpekcie
+- **`https://ctu.gov.cz`** — seznam blokovaných webů Českého telekomunikačního úřadu
 - **`https://spajk-cz.github.io/boit-risk-feed/blacklist.txt`** — seznam vedený BOIT Cyber Security
 
 Jiné síťové operace extension neprovádí. Při stahování se nepřenáší žádná identifikace
@@ -37,7 +38,7 @@ Navštívené URL, hostname ani historie prohlížení se nikam neodesílají �
 celý seznam, nikoli dotaz na konkrétní doménu.
 
 **Na rovinu k IP adrese:** stahování seznamu je běžný HTTPS požadavek, takže poskytovatelé
-hostingu těchto seznamů (ČOI, SOI a u BOIT seznamu GitHub Pages) vidí obvyklé údaje
+hostingu těchto seznamů (ČOI, SOI, ČTÚ a u BOIT seznamu GitHub Pages) vidí obvyklé údaje
 HTTP spojení, včetně IP adresy a User-Agentu. Netvrdíme, že to možné není. Co se jim
 neposílá, je informace o tom, jaké weby navštěvujete.
 
@@ -75,6 +76,7 @@ jste právě navštívili. Co napíšete do e-mailu, je plně na vás.
 - `tabs` — zjištění aktuální URL tabu pro zobrazení stavu v ikonce a popupu
 - `host_permissions: coi.gov.cz` — stahování seznamu ČOI
 - `host_permissions: www.soi.sk` — stahování seznamu SOI
+- `host_permissions: ctu.gov.cz` — stahování seznamu blokovaných webů ČTÚ
 - `host_permissions: spajk-cz.github.io` — stahování seznamu BOIT
 - `content_scripts` na všech webech — detekce rizikových domén při načtení stránky
 

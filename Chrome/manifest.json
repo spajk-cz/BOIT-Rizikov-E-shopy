@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "BOIT Rizikové E-shopy",
   "short_name": "BOIT Rizikové E-shopy",
-  "version": "1.8.0",
-  "description": "Varuje vás při návštěvě rizikových e-shopů ze seznamů ČOI (CZ), SOI (SK) a BOIT. Navíc detekuje další podvodné signály.",
+  "version": "1.9.0",
+  "description": "Varuje vás při návštěvě rizikových e-shopů ze seznamů ČOI (CZ), SOI (SK), ČTÚ a BOIT. Navíc detekuje další podvodné signály.",
   "author": "BOIT Cyber Security s.r.o.",
   "homepage_url": "https://boit.cz",
   "minimum_chrome_version": "110",
@@ -16,6 +16,7 @@
   "host_permissions": [
     "https://coi.gov.cz/*",
     "https://www.soi.sk/*",
+    "https://ctu.gov.cz/*",
     "https://spajk-cz.github.io/*"
   ],
 
@@ -57,6 +58,6 @@
   },
 
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://coi.gov.cz https://www.soi.sk https://spajk-cz.github.io;"
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://coi.gov.cz https://www.soi.sk https://ctu.gov.cz https://spajk-cz.github.io;"
   }
 }

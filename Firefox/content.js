@@ -21,6 +21,53 @@
   // Bez parametrů — kontrolovaná doména se nikam neodesílá.
   const REPORT_PAGE_URL = 'https://github.com/spajk-cz/BOIT-Rizikov-E-shopy/blob/main/NAHLASENI.md';
 
+  // Text varování se skládá podle toho, který seznam doménu skutečně vede —
+  // tvrzení o ČTÚ nesmí padnout u domény, kterou vede jen ČOI, a naopak.
+  // Vnořené pole znamená zvýrazněnou část. Vykresluje se jako DOM uzly, takže
+  // se nikde nesestavuje HTML řetězec z dat.
+  const SOURCE_DESCRIPTIONS = {
+    CTU: ['Tato stránka je uvedena na oficiálním seznamu blokovaných webů ', ['ČTÚ'],
+      '. Ten vedle nepovolených internetových her zahrnuje i nelegální nabídku léčiv a další kategorie, nejde tedy jen o e-shopy.'],
+    COI: ['Tato doména je na oficiálním seznamu rizikových e-shopů ', ['České obchodní inspekce'], '.'],
+    SOI: ['Tato doména je na oficiálním seznamu rizikových internetových obchodů ', ['Slovenskej obchodnej inšpekcie'], '.'],
+    BOIT: ['Tato doména je na seznamu rizikových webů, který vede ', ['BOIT Cyber Security'], '.']
+  };
+
+  // Použije se, když zdroj shody neznáme — typicky během přechodu ze starší verze.
+  const FALLBACK_DESCRIPTION = ['Tato doména je na jednom ze seznamů rizikových webů, které doplněk používá: ',
+    ['ČOI'], ', ', ['SOI'], ', ', ['ČTÚ'], ' nebo ', ['BOIT'], '.'];
+
+  const CAUTION_DESCRIPTION = [' Před zadáním osobních či platebních údajů doporučujeme zvýšenou opatrnost.'];
+
+  function renderDescription(el, matchedSources) {
+    if (!el) return;
+
+    const names = Array.isArray(matchedSources)
+      ? matchedSources.map(s => (s && s.name) || '').filter(Boolean)
+      : [];
+
+    const segments = [];
+    for (const key of ['CTU', 'COI', 'SOI', 'BOIT']) {
+      if (!names.includes(key)) continue;
+      if (segments.length) segments.push(' ');
+      for (const part of SOURCE_DESCRIPTIONS[key]) segments.push(part);
+    }
+    if (segments.length === 0) for (const part of FALLBACK_DESCRIPTION) segments.push(part);
+    for (const part of CAUTION_DESCRIPTION) segments.push(part);
+
+    el.textContent = '';
+    for (const segment of segments) {
+      if (Array.isArray(segment)) {
+        const strong = document.createElement('strong');
+        strong.textContent = segment[0];
+        el.appendChild(strong);
+      } else {
+        el.appendChild(document.createTextNode(segment));
+      }
+    }
+  }
+
+
   // ── Parsovací helpery pro statický markup ──
   // Linter AMO chybně označuje innerHTML = staticConst za "unsafe" (false positive).
   // DOMParser je explicitní parsovací API, které linter považuje za safe — výsledek
@@ -47,7 +94,7 @@
       if (response.isRisky && !response.whitelisted) {
         const signals = detectRiskSignals();
         browser.runtime.sendMessage({ type: 'RECORD_BLOCK', hostname }).catch(() => {});
-        injectWarning(signals);
+        injectWarning(signals, response.matchedSources);
       }
     })
     .catch(() => { /* background nedostupný — ignorujeme */ });
@@ -122,7 +169,7 @@
   // ──────────────────────────────────────────────────────────────────────
   // Overlay (hardened — closed shadow DOM + MutationObserver + CSS blur)
   // ──────────────────────────────────────────────────────────────────────
-  function injectWarning(signals) {
+  function injectWarning(signals, matchedSources) {
     // Příznak že uživatel klikl na "Přesto vstoupit" / "Povolit 24 h" — overlay už nemá být znovu vkládán
     let dismissed = false;
 
@@ -167,6 +214,7 @@
     if (logoSlot) logoSlot.appendChild(parseStaticSvg(BOIT_LOGO_SVG));
 
     setText(card.querySelector('.js-domain'), hostname);
+    renderDescription(card.querySelector('.js-desc'), matchedSources);
 
     const signalList = card.querySelector('.js-signals');
     const signalsSection = card.querySelector('.js-signals-section');
@@ -353,10 +401,7 @@
         '<span class="boit-domain-val js-domain"></span>',
       '</div>',
 
-      '<div class="boit-desc">',
-        'Tato doména je na jednom ze seznamů rizikových webů, které doplněk používá: <strong>ČOI</strong>, <strong>SOI</strong> nebo <strong>BOIT</strong>. ',
-        'Před zadáním osobních či platebních údajů doporučujeme zvýšenou opatrnost.',
-      '</div>',
+      '<div class="boit-desc js-desc"></div>',
 
       '<div class="boit-actions">',
         '<button class="boit-btn-leave js-btn-leave" type="button">← Odejít (doporučeno)</button>',
@@ -377,7 +422,7 @@
           '</div>',
 
           '<div class="boit-note">',
-            'Zdroje: <span class="boit-link">coi.gov.cz</span>, <span class="boit-link">soi.sk</span> a seznam <span class="boit-link">BOIT</span> · pravidelně aktualizované. ',
+            'Zdroje: <span class="boit-link">coi.gov.cz</span>, <span class="boit-link">soi.sk</span>, <span class="boit-link">ctu.gov.cz</span> a seznam <span class="boit-link">BOIT</span> · pravidelně aktualizované. ',
             'Zařazení je varováním, nikoli zákazem. ',
             'Nahlášení domény i žádost o vyřazení: <span class="boit-link">doplnek@boit.cz</span>.',
           '</div>',
@@ -396,7 +441,7 @@
         '<div class="boit-hashtag">#DělámeČeskoBezpečnější</div>',
         '<div class="boit-footer-sub">BOIT Cyber Security · boit.cz/nastroje/podvodne-weby</div>',
       '</div>',
-      '<div class="boit-footer-right">v1.8.0</div>',
+      '<div class="boit-footer-right">v1.9.0</div>',
     '</div>'
   ].join('');
 

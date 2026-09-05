@@ -127,7 +127,7 @@ async function init() {
     safeSetText('cacheAge', formatAge(status.cacheAge));
 
     const dot = document.getElementById('statusDot');
-    const missing = (status.sources || []).filter(s => !s.loaded).map(s => s.name);
+    const missing = (status.sources || []).filter(s => !s.loaded).map(s => s.label || s.name);
     if (status.domainCount > 0 && dot) {
       dot.classList.add('active');
       safeSetText('statusLabel', missing.length ? 'částečně aktivní' : 'aktivní');

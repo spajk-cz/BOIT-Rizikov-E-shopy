@@ -19,9 +19,10 @@ const BOIT_FEED_URL = 'https://spajk-cz.github.io/boit-risk-feed/blacklist.txt';
 const REPORT_PAGE_URL = 'https://github.com/spajk-cz/BOIT-Rizikov-E-shopy/blob/main/NAHLASENI.md';
 
 const SOURCES = Object.freeze([
-  { name: 'COI',  format: 'html', url: 'https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/' },
-  { name: 'SOI',  format: 'html', url: 'https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody' },
-  { name: 'BOIT', format: 'text', url: BOIT_FEED_URL }
+  { name: 'COI',  label: 'ČOI',  format: 'html',    url: 'https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/' },
+  { name: 'SOI',  label: 'SOI',  format: 'html',    url: 'https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody' },
+  { name: 'CTU',  label: 'ČTÚ',  format: 'ctu-csv', url: 'https://ctu.gov.cz/vyhledavaci-databaze/blokovane-weby/csv' },
+  { name: 'BOIT', label: 'BOIT', format: 'text',    url: BOIT_FEED_URL }
 ]);
 
 // Zdroje, které musí být znovu načtené, než zahodíme přechodovou cache ze starší verze.
@@ -40,15 +41,23 @@ const CACHE_TTL = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT = 15000;
 const MAX_DOMAIN_LENGTH = 253;
 const MAX_LABEL_LENGTH = 63;
-const MAX_DOMAINS = 5000;
+
+// Strop na jeden zdroj. ČTÚ seznam je řádově větší než ČOI/SOI a dál roste.
+const MAX_DOMAINS = 20000;
 
 // Sjednocení smí být až součet limitů jednotlivých zdrojů. Kdybychom drželi
-// 5 000 i pro výsledek, mohl by třetí zdroj za hranicí tiše vypadnout celý.
+// limit jednoho zdroje i pro výsledek, mohl by poslední zdroj za hranicí
+// tiše vypadnout celý.
 const MAX_MERGED_DOMAINS = MAX_DOMAINS * SOURCES.length;
 
-// Datový kontrakt BOIT feedu, viz repozitář boit-risk-feed.
+// Datový kontrakt BOIT feedu, viz repozitář boit-risk-feed. Vlastní limit,
+// nižší než obecný strop na zdroj, protože ho drží i validátor feedu.
 const BOIT_FEED_HEADER = '# BOIT risk feed v1';
+const MAX_BOIT_FEED_DOMAINS = 5000;
 const MAX_FEED_BYTES = 2 * 1024 * 1024;
+
+// ČTÚ CSV má dnes zhruba 400 kB; strop nechává rezervu, ale odpověď ohraničuje.
+const MAX_CSV_BYTES = 8 * 1024 * 1024;
 
 const SAFELIST = Object.freeze(new Set([
   'coi.gov.cz', 'gov.cz', 'soi.sk', 'gov.sk', 'slovensko.sk',
@@ -71,13 +80,44 @@ function normalizeHostname(s) {
 }
 
 function isRiskyMatch(hostname, riskyList) {
-  if (!hostname || !riskyList || riskyList.length === 0) return false;
+  if (!hostname || !riskyList) return false;
   if (SAFELIST.has(hostname)) return false;
-  for (const d of riskyList) {
-    if (hostname === d) return true;
-    if (hostname.endsWith('.' + d)) return true;
+
+  const set = riskyList instanceof Set ? riskyList : new Set(riskyList);
+  if (set.size === 0) return false;
+
+  // Projdeme hostname a jeho nadřazené domény — položka platí i pro subdomény.
+  // Konstantní počet kroků podle počtu labelů, ne průchod celým seznamem.
+  // Poslední label (např. "com") se netestuje, cyklus končí dřív; do seznamu
+  // se stejně nedostane, všechny parsery vyžadují nejméně dva labely.
+  let candidate = hostname;
+  while (candidate.includes('.')) {
+    if (set.has(candidate)) return true;
+    candidate = candidate.slice(candidate.indexOf('.') + 1);
   }
   return false;
+}
+
+// Sloučený seznam je velký, proto si Set držíme mezi voláními a přestavujeme
+// ho až po skutečné změně dat.
+let matchSetCache = { key: null, set: null };
+
+function riskySet(domains, cacheTs) {
+  const key = String(cacheTs) + ':' + domains.length;
+  if (matchSetCache.key !== key) matchSetCache = { key, set: new Set(domains) };
+  return matchSetCache.set;
+}
+
+/** Vrátí zdroje, které danou doménu vedou. Prázdné pole = zdroj neznáme. */
+function matchingSources(hostname, cache) {
+  const matched = [];
+  for (const source of SOURCES) {
+    const entry = cache.sources[source.name];
+    if (entry && isRiskyMatch(hostname, entry.domains)) {
+      matched.push({ name: source.name, label: source.label });
+    }
+  }
+  return matched;
 }
 
 async function safeFetch(url, timeoutMs = FETCH_TIMEOUT, maxBytes = 0) {
@@ -236,9 +276,120 @@ function parseDomainsFromBoitFeed(text) {
     domains.push(line);
   }
 
-  if (domains.length > MAX_DOMAINS) {
-    throw new Error('feed překročil limit ' + MAX_DOMAINS + ' domén');
+  if (domains.length > MAX_BOIT_FEED_DOMAINS) {
+    throw new Error('feed překročil limit ' + MAX_BOIT_FEED_DOMAINS + ' domén');
   }
+  return domains;
+}
+
+// ─── ČTÚ CSV ────────────────────────────────────────────────────────────
+// Seznam blokovaných webů ČTÚ: nepovolené internetové hry, nelegální nabídka
+// léčiv a další kategorie. Nejde tedy jen o e-shopy.
+
+/** Minimální CSV parser podle RFC 4180. Zvládne uvozovky, čárky i CRLF. */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inQuotes) {
+      if (ch !== '"') { field += ch; continue; }
+      if (text[i + 1] === '"') { field += '"'; i++; continue; }
+      inQuotes = false;
+      continue;
+    }
+
+    if (ch === '"') { inQuotes = true; continue; }
+    if (ch === ',') { row.push(field); field = ''; continue; }
+    if (ch === '\r') continue;
+    if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; continue; }
+    field += ch;
+  }
+
+  if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+/**
+ * Bezpečně vytáhne hostname ze záznamu ČTÚ. Vrací null pro vše, co nemá být
+ * v seznamu — hlavně pro odkazy na konkrétní stránku, aby jeden blokovaný
+ * článek neoznačil celý jinak legitimní web.
+ */
+function hostnameFromCtuUrl(raw) {
+  const value = String(raw == null ? '' : raw).trim();
+  if (!value) return null;
+
+  // Bez schématu by se URL() pokusil hodnotu vyložit jinak.
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : 'https://' + value;
+
+  let url;
+  try {
+    url = new URL(withScheme);
+  } catch (e) {
+    return null;
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+  if (url.username || url.password) return null;
+  if (url.search || url.hash) return null;
+  // IP adresu do seznamu domén nepouštíme, stejně jako u BOIT feedu.
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(url.hostname)) return null;
+  // Koncové lomítko je stále jen doména, konkrétní cesta už ne.
+  if (url.pathname && url.pathname !== '/') return null;
+
+  const host = normalizeHostname(url.hostname);
+  return isValidHostname(host) ? host : null;
+}
+
+/**
+ * Rozparsuje CSV ČTÚ. Bere jen platné záznamy, tedy s prázdným DATUM_VYMAZU.
+ * Vadný jednotlivý řádek přeskočí, ale rozbitou strukturu celého CSV odmítne,
+ * aby zůstal poslední funkční seznam.
+ */
+function parseDomainsFromCtuCsv(text) {
+  if (typeof text !== 'string') throw new Error('CSV není text');
+
+  const body = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+  const rows = parseCsvRows(body);
+  if (rows.length === 0) throw new Error('prázdné CSV');
+
+  const header = rows[0].map(h => h.trim().toUpperCase());
+  const urlIndex = header.indexOf('URL');
+  const removedIndex = header.indexOf('DATUM_VYMAZU');
+  if (urlIndex === -1 || removedIndex === -1) {
+    throw new Error('CSV nemá očekávané sloupce URL a DATUM_VYMAZU');
+  }
+
+  const domains = [];
+  const seen = new Set();
+  let truncated = false;
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.length <= urlIndex) continue;
+
+    // Vyplněné datum výmazu znamená, že záznam už neplatí.
+    if (removedIndex < row.length && (row[removedIndex] || '').trim() !== '') continue;
+
+    const host = hostnameFromCtuUrl(row[urlIndex]);
+    if (!host) continue;
+    if (SAFELIST.has(host)) continue;
+    if (seen.has(host)) continue;
+
+    seen.add(host);
+    domains.push(host);
+
+    if (domains.length >= MAX_DOMAINS) { truncated = true; break; }
+  }
+
+  if (truncated) {
+    console.warn('[BOIT] ČTÚ seznam dosáhl stropu ' + MAX_DOMAINS + ' domén a byl oříznut.');
+  }
+  if (domains.length === 0) throw new Error('CSV neobsahuje žádnou platnou doménu');
   return domains;
 }
 
@@ -248,15 +399,23 @@ function parseDomainsFromBoitFeed(text) {
  * Načte jeden zdroj. Vrací výsledek se stavem, aby volající uměl odlišit
  * úspěch, úspěšný prázdný BOIT seznam a chybu.
  */
-async function fetchOneSource(source) {
-  const isText = source.format === 'text';
-  try {
-    const body = await safeFetch(source.url, FETCH_TIMEOUT, isText ? MAX_FEED_BYTES : 0);
-    const domains = isText ? parseDomainsFromBoitFeed(body) : parseDomainsFromHtml(body);
+const MAX_BYTES_BY_FORMAT = Object.freeze({ text: MAX_FEED_BYTES, 'ctu-csv': MAX_CSV_BYTES });
 
-    // Prázdný výsledek HTML parseru bereme konzervativně jako chybu — spíš se
-    // změnila struktura stránky, než že by úřad zrušil celý seznam.
-    if (!isText && domains.length === 0) throw new Error('parser nenašel žádnou doménu');
+async function fetchOneSource(source) {
+  try {
+    const body = await safeFetch(source.url, FETCH_TIMEOUT, MAX_BYTES_BY_FORMAT[source.format] || 0);
+
+    let domains;
+    if (source.format === 'text') {
+      domains = parseDomainsFromBoitFeed(body);
+    } else if (source.format === 'ctu-csv') {
+      domains = parseDomainsFromCtuCsv(body);
+    } else {
+      domains = parseDomainsFromHtml(body);
+      // Prázdný výsledek HTML parseru bereme konzervativně jako chybu — spíš se
+      // změnila struktura stránky, než že by úřad zrušil celý seznam.
+      if (domains.length === 0) throw new Error('parser nenašel žádnou doménu');
+    }
 
     console.log('[BOIT] ' + source.name + ': ' + domains.length + ' domén');
     return { name: source.name, ok: true, domains };
@@ -558,8 +717,8 @@ async function checkTabAndUpdateIcon(tabId) {
 
   try {
     const hostname = normalizeHostname(new URL(tab.url).hostname);
-    const r = await browser.storage.local.get([STORAGE_KEYS.DOMAINS]);
-    const risky = isRiskyMatch(hostname, r[STORAGE_KEYS.DOMAINS] || []);
+    const r = await browser.storage.local.get([STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS]);
+    const risky = isRiskyMatch(hostname, riskySet(r[STORAGE_KEYS.DOMAINS] || [], r[STORAGE_KEYS.CACHE_TS]));
     const whitelisted = await isWhitelisted(hostname);
     await setIconForTab(tabId, risky && !whitelisted);
   } catch (e) {
@@ -613,15 +772,23 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return false;
       }
       (async () => {
-        const r = await browser.storage.local.get([STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS]);
-        const risky = isRiskyMatch(hostname, r[STORAGE_KEYS.DOMAINS] || []);
+        const r = await browser.storage.local.get([
+          STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS, STORAGE_KEYS.SOURCE_CACHE
+        ]);
+        const domains = r[STORAGE_KEYS.DOMAINS] || [];
+        const risky = isRiskyMatch(hostname, riskySet(domains, r[STORAGE_KEYS.CACHE_TS]));
         const whitelisted = await isWhitelisted(hostname);
         const effective = risky && !whitelisted;
         if (sender.tab?.id) await setIconForTab(sender.tab.id, effective);
         sendResponse({
           isRisky: risky,
           whitelisted,
-          domainCount: (r[STORAGE_KEYS.DOMAINS] || []).length,
+          // Zdroj shody dohledáváme jen při skutečné shodě, ať nemusíme na každé
+          // navštívené stránce procházet všechny per-source seznamy.
+          matchedSources: risky
+            ? matchingSources(hostname, normalizeSourceCache(r[STORAGE_KEYS.SOURCE_CACHE]))
+            : [],
+          domainCount: domains.length,
           cacheAge: r[STORAGE_KEYS.CACHE_TS] ? Date.now() - r[STORAGE_KEYS.CACHE_TS] : null
         });
       })();
@@ -696,6 +863,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             const entry = cache.sources[source.name];
             return {
               name: source.name,
+              label: source.label,
               loaded: Boolean(entry),
               count: entry ? entry.domains.length : 0,
               ts: entry ? entry.ts : null
