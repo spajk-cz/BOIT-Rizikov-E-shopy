@@ -13,6 +13,10 @@
 
   const setText = (el, text) => { if (el) el.textContent = String(text == null ? '' : text); };
 
+  // Stránka projektu s kontaktem pro nahlášení domény i žádost o vyřazení.
+  // Bez parametrů — kontrolovaná doména se nikam neodesílá.
+  const REPORT_PAGE_URL = 'https://github.com/spajk-cz/BOIT-Rizikov-E-shopy/blob/main/NAHLASENI.md';
+
   chrome.runtime.sendMessage({ type: 'CHECK_DOMAIN', hostname }, (response) => {
     if (chrome.runtime.lastError || !response) return;
     if (response.isRisky && !response.whitelisted) {
@@ -172,12 +176,6 @@
     const btnProceed = card.querySelector('.js-btn-proceed');
     const btnReport  = card.querySelector('.js-btn-report');
 
-    // Dynamický label tlačítka "Nahlásit" — SOI pro .sk, ČOI pro ostatní
-    if (btnReport) {
-      const reportTo = hostname.endsWith('.sk') ? 'SOI' : 'ČOI';
-      setText(btnReport, '⚑ Nahlásit ' + reportTo);
-    }
-
     // isTrusted check — ignorujeme syntetické click() z console / page scriptu
     const trustedHandler = (fn) => (ev) => {
       if (!ev || !ev.isTrusted) return;
@@ -202,28 +200,11 @@
     }));
 
     btnReport.addEventListener('click', trustedHandler(() => {
-      // Pokud je doména .sk, nahlásíme na SOI; jinak na ČOI
-      const isSk = hostname.endsWith('.sk');
-      const reportEmail = isSk ? 'info@soi.sk' : 'podatelna@coi.gov.cz';
-      const reportAuthority = isSk ? 'SOI' : 'ČOI';
-
-      chrome.runtime.sendMessage({
-        type: 'REPORT_COI',
-        hostname,
-        signals: (signals || []).map(s => ({ title: s.title })),
-        email: reportEmail,
-        authority: reportAuthority
-      }, (res) => {
+      // Otevře stránku projektu s kontaktem. Doména ani zjištěné signály se
+      // nikam neodesílají — v odkazu není žádný parametr.
+      chrome.runtime.sendMessage({ type: 'OPEN_REPORT_PAGE' }, (res) => {
         if (chrome.runtime.lastError || !res || !res.ok) {
-          const subject = encodeURIComponent('Podezřelý e-shop: ' + hostname);
-          const body = encodeURIComponent(
-            'Dobrý den,\n\n' +
-            'rád bych upozornil na podezřelý e-shop: https://' + hostname + '\n\n' +
-            'Zjištěná rizika:\n' +
-            ((signals && signals.length) ? signals.map(s => '- ' + s.title).join('\n') : '(žádná automatická detekce)') +
-            '\n\nDěkuji.'
-          );
-          window.open('mailto:' + reportEmail + '?subject=' + subject + '&body=' + body, '_blank', 'noopener');
+          window.open(REPORT_PAGE_URL, '_blank', 'noopener');
         }
       });
     }));
@@ -337,16 +318,16 @@
     '</div>',
 
     '<div class="boit-body">',
-      '<div class="boit-eyebrow">ČOI · Rizikový e-shop</div>',
-      '<div class="boit-headline">Pozor. <span>Podvodný</span> web.</div>',
+      '<div class="boit-eyebrow">BOIT · Rizikový web</div>',
+      '<div class="boit-headline">Pozor. <span>Rizikový</span> web.</div>',
       '<div class="boit-domain-row">',
         '<span class="boit-arrow">→</span>',
         '<span class="boit-domain-val js-domain"></span>',
       '</div>',
 
       '<div class="boit-desc">',
-        'Tato doména je v oficiálním seznamu rizikových e-shopů <strong>České obchodní inspekce</strong> nebo <strong>Slovenskej obchodnej inšpekcie</strong>. ',
-        'Provozovatel není ověřitelný nebo neplní zákonné povinnosti.',
+        'Tato doména je na jednom ze seznamů rizikových webů, které doplněk používá: <strong>ČOI</strong>, <strong>SOI</strong> nebo <strong>BOIT</strong>. ',
+        'Před zadáním osobních či platebních údajů doporučujeme zvýšenou opatrnost.',
       '</div>',
 
       '<div class="boit-actions">',
@@ -368,13 +349,14 @@
           '</div>',
 
           '<div class="boit-note">',
-            'Zdroj: <span class="boit-link">coi.gov.cz</span> + <span class="boit-link">soi.sk</span> · pravidelně aktualizovaný seznam. ',
-            'Zařazení je varováním, nikoli zákazem.',
+            'Zdroje: <span class="boit-link">coi.gov.cz</span>, <span class="boit-link">soi.sk</span> a seznam <span class="boit-link">BOIT</span> · pravidelně aktualizované. ',
+            'Zařazení je varováním, nikoli zákazem. ',
+            'Nahlášení domény i žádost o vyřazení: <span class="boit-link">doplnek@boit.cz</span>.',
           '</div>',
 
           '<div class="boit-actions-secondary">',
             '<button class="boit-btn-ghost js-btn-whitelist" type="button">↷ Povolit na 24 h</button>',
-            '<button class="boit-btn-ghost js-btn-report" type="button">⚑ Nahlásit</button>',
+            '<button class="boit-btn-ghost js-btn-report" type="button">⚑ Nahlásit nebo odvolat</button>',
           '</div>',
 
         '</div>',
@@ -386,7 +368,7 @@
         '<div class="boit-hashtag">#DělámeČeskoBezpečnější</div>',
         '<div class="boit-footer-sub">BOIT Cyber Security · boit.cz/nastroje/podvodne-weby</div>',
       '</div>',
-      '<div class="boit-footer-right">v1.7.0</div>',
+      '<div class="boit-footer-right">v1.8.0</div>',
     '</div>'
   ].join('');
 

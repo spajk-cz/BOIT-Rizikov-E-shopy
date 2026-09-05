@@ -108,7 +108,7 @@ function updateWhitelistControls() {
 
   if (note) {
     if (!hasHost) note.textContent = 'Whitelist se používá jen pro běžné webové stránky.';
-    else if (whitelisted) note.textContent = 'Tahle doména je teď povolená. Odebráním se znovu začne blokovat, pokud je na seznamu ČOI.';
+    else if (whitelisted) note.textContent = 'Tahle doména je teď povolená. Odebráním se znovu začne blokovat, pokud je na některém ze seznamů.';
     else if (risky) note.textContent = 'Rizikovou doménu můžeš dočasně povolit na 24 hodin.';
     else note.textContent = 'Aktuální doména není riziková. Níže najdeš ručně povolené domény.';
   }
@@ -126,12 +126,16 @@ async function init() {
     safeSetText('cacheAge', formatAge(status.cacheAge));
 
     const dot = document.getElementById('statusDot');
+    const missing = (status.sources || []).filter(s => !s.loaded).map(s => s.name);
     if (status.domainCount > 0 && dot) {
       dot.classList.add('active');
-      safeSetText('statusLabel', 'aktivní');
+      safeSetText('statusLabel', missing.length ? 'částečně aktivní' : 'aktivní');
     } else {
       safeSetText('statusLabel', 'načítám');
     }
+    // Zdroj, který se dosud nepodařilo načíst, musí být vidět — stáří seznamu
+    // samo o sobě o chybějícím zdroji nic neřekne.
+    safeSetText('sourceNote', missing.length ? 'nenačteno: ' + missing.join(', ') : 'sledovaných domén');
   }
 
   const stats = await sendMessage({ type: 'GET_STATS' });
@@ -147,7 +151,7 @@ async function init() {
       const statusEl = document.getElementById('siteStatus');
       if (res.isRisky && !res.whitelisted) {
         statusEl.className = 'site-status risky';
-        safeSetText('siteStatusText', '⚠ RIZIKOVÝ E-SHOP (dle ČOI)');
+        safeSetText('siteStatusText', '⚠ RIZIKOVÝ WEB (dle seznamů doplňku)');
         document.body.classList.add('risky');
       } else if (res.isRisky && res.whitelisted) {
         statusEl.className = 'site-status whitelisted';
@@ -155,7 +159,7 @@ async function init() {
         document.body.classList.remove('risky');
       } else {
         statusEl.className = 'site-status safe';
-        safeSetText('siteStatusText', '✓ Není na seznamu ČOI');
+        safeSetText('siteStatusText', '✓ Není na seznamech doplňku');
         document.body.classList.remove('risky');
       }
     }
@@ -177,7 +181,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('refreshBtn');
     btn.textContent = '↺  Aktualizuji...';
     btn.disabled = true;
-    chrome.runtime.sendMessage({ type: 'FORCE_REFRESH' }, () => {
+    sendMessage({ type: 'FORCE_REFRESH' }).then((res) => {
+      // Částečná obnova se nesmí tvářit jako plný úspěch.
+      if (!res || !res.ok) btn.textContent = '↺  Obnova selhala';
+      else if (res.partial) btn.textContent = '↺  Částečně aktualizováno';
+      else btn.textContent = '↺  Aktualizováno';
       setTimeout(() => {
         btn.textContent = '↺  Aktualizovat seznam';
         btn.disabled = false;

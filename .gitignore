@@ -1,0 +1,5 @@
+# Výstupní balíčky pro obchody — sestavují se lokálně, do gitu nepatří.
+dist/
+
+.DS_Store
+node_modules/

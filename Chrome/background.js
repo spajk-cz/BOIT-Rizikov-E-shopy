@@ -6,14 +6,25 @@
 'use strict';
 
 // ─── Konstanty ──────────────────────────────────────────────────────────
+const BOIT_FEED_URL = 'https://spajk-cz.github.io/boit-risk-feed/blacklist.txt';
+
+// Stránka projektu s kontaktem pro nahlášení domény i žádost o vyřazení.
+// Otevírá se bez parametrů, aby se kontrolovaná doména nikam neodeslala.
+const REPORT_PAGE_URL = 'https://github.com/spajk-cz/BOIT-Rizikov-E-shopy/blob/main/NAHLASENI.md';
+
 const SOURCES = Object.freeze([
-  { name: 'COI', url: 'https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/' },
-  { name: 'SOI', url: 'https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody' }
+  { name: 'COI',  format: 'html', url: 'https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/' },
+  { name: 'SOI',  format: 'html', url: 'https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody' },
+  { name: 'BOIT', format: 'text', url: BOIT_FEED_URL }
 ]);
+
+// Zdroje, které musí být znovu načtené, než zahodíme přechodovou cache ze starší verze.
+const LEGACY_SOURCE_NAMES = Object.freeze(['COI', 'SOI']);
 
 const STORAGE_KEYS = Object.freeze({
   DOMAINS:      'boit_rizikove_domains',
   CACHE_TS:     'boit_rizikove_ts',
+  SOURCE_CACHE: 'boit_source_cache',
   STATS_BLOCKS: 'boit_stats_blocked',
   STATS_SEEN:   'boit_stats_seen_domains',
   WHITELIST:    'boit_whitelist',
@@ -22,7 +33,16 @@ const STORAGE_KEYS = Object.freeze({
 const CACHE_TTL = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT = 15000;
 const MAX_DOMAIN_LENGTH = 253;
+const MAX_LABEL_LENGTH = 63;
 const MAX_DOMAINS = 5000;
+
+// Sjednocení smí být až součet limitů jednotlivých zdrojů. Kdybychom drželi
+// 5 000 i pro výsledek, mohl by třetí zdroj za hranicí tiše vypadnout celý.
+const MAX_MERGED_DOMAINS = MAX_DOMAINS * SOURCES.length;
+
+// Datový kontrakt BOIT feedu, viz repozitář boit-risk-feed.
+const BOIT_FEED_HEADER = '# BOIT risk feed v1';
+const MAX_FEED_BYTES = 2 * 1024 * 1024;
 
 const SAFELIST = Object.freeze(new Set([
   'coi.gov.cz', 'gov.cz', 'soi.sk', 'gov.sk', 'slovensko.sk',
@@ -54,7 +74,9 @@ function isRiskyMatch(hostname, riskyList) {
   return false;
 }
 
-async function safeFetch(url, timeoutMs = FETCH_TIMEOUT) {
+async function safeFetch(url, timeoutMs = FETCH_TIMEOUT, maxBytes = 0) {
+  if (!/^https:\/\//i.test(url)) throw new Error('pouze HTTPS');
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -65,7 +87,20 @@ async function safeFetch(url, timeoutMs = FETCH_TIMEOUT) {
       redirect: 'follow'
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.text();
+
+    if (maxBytes > 0) {
+      const declared = Number(res.headers.get('content-length'));
+      if (Number.isFinite(declared) && declared > maxBytes) {
+        throw new Error('odpověď je větší než ' + maxBytes + ' B');
+      }
+    }
+
+    const text = await res.text();
+
+    if (maxBytes > 0 && new TextEncoder().encode(text).length > maxBytes) {
+      throw new Error('odpověď je větší než ' + maxBytes + ' B');
+    }
+    return text;
   } finally {
     clearTimeout(timer);
   }
@@ -138,48 +173,250 @@ function parseDomainsFromHtml(html) {
   return [...domains].slice(0, MAX_DOMAINS);
 }
 
+// ─── BOIT feed ──────────────────────────────────────────────────────────
+// Vlastní přísný parser. Tolerantní HTML parser výše umí i TXT, ale zahazuje
+// z URL cestu a některé chyby ignoruje. U ručně i strojově spravovaného BOIT
+// feedu naopak chceme chybný obsah odmítnout celý.
+
+function isValidBoitFeedDomain(value) {
+  if (typeof value !== 'string') return false;
+  if (value !== value.trim()) return false;
+  if (value.length === 0 || value.length > MAX_DOMAIN_LENGTH) return false;
+  if (/[^\x21-\x7e]/.test(value)) return false;           // mimo ASCII, mezera, řídicí znak
+  if (/[A-Z]/.test(value)) return false;                  // musí být lowercase
+  if (/[#/?&@:*[\]()<>]/.test(value)) return false;       // URL, query, port, e-mail, wildcard, markdown
+  if (value.startsWith('www.')) return false;             // publikuje se bez www.
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value)) return false; // IP adresa
+
+  const labels = value.split('.');
+  if (labels.length < 2) return false;
+  for (const label of labels) {
+    if (label.length === 0 || label.length > MAX_LABEL_LENGTH) return false;
+    if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)) return false;
+  }
+  return /^(?:[a-z]{2,}|xn--[a-z0-9-]+)$/.test(labels[labels.length - 1]);
+}
+
+/**
+ * Rozparsuje BOIT feed. Při jakékoli závadě vyhodí výjimku, aby volající mohl
+ * odmítnout celou odpověď a nechat poslední funkční cache.
+ * Samotná hlavička bez domén je platná prázdná aktualizace.
+ */
+function parseDomainsFromBoitFeed(text) {
+  if (typeof text !== 'string') throw new Error('feed není text');
+
+  // UTF-8 BOM při čtení zahodíme.
+  const body = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+  const lines = body.split(/\r?\n/);
+
+  if (lines[0] !== BOIT_FEED_HEADER) throw new Error('chybí hlavička feedu');
+
+  const domains = [];
+  const seen = new Set();
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === '') continue;
+    if (line.startsWith('#')) continue;
+
+    if (!isValidBoitFeedDomain(line)) {
+      throw new Error('neplatný řádek ' + (i + 1));
+    }
+    // Safelist má přednost před feedem a nelze ho vzdáleně měnit.
+    if (SAFELIST.has(line)) continue;
+    if (seen.has(line)) continue;
+
+    seen.add(line);
+    domains.push(line);
+  }
+
+  if (domains.length > MAX_DOMAINS) {
+    throw new Error('feed překročil limit ' + MAX_DOMAINS + ' domén');
+  }
+  return domains;
+}
+
 // ─── Fetch & cache ──────────────────────────────────────────────────────
 
+/**
+ * Načte jeden zdroj. Vrací výsledek se stavem, aby volající uměl odlišit
+ * úspěch, úspěšný prázdný BOIT seznam a chybu.
+ */
 async function fetchOneSource(source) {
+  const isText = source.format === 'text';
   try {
-    const html = await safeFetch(source.url);
-    const domains = parseDomainsFromHtml(html);
+    const body = await safeFetch(source.url, FETCH_TIMEOUT, isText ? MAX_FEED_BYTES : 0);
+    const domains = isText ? parseDomainsFromBoitFeed(body) : parseDomainsFromHtml(body);
+
+    // Prázdný výsledek HTML parseru bereme konzervativně jako chybu — spíš se
+    // změnila struktura stránky, než že by úřad zrušil celý seznam.
+    if (!isText && domains.length === 0) throw new Error('parser nenašel žádnou doménu');
+
     console.log('[BOIT] ' + source.name + ': ' + domains.length + ' domén');
-    return domains;
+    return { name: source.name, ok: true, domains };
   } catch (e) {
     console.error('[BOIT] ' + source.name + ' fetch chyba:', e.message || e);
-    return [];
+    return { name: source.name, ok: false, domains: [] };
   }
 }
 
-async function fetchAndCacheDomains() {
-  // Paralelně všechny zdroje
+/** Uvede uloženou per-source cache do známého tvaru; cizí data ignoruje. */
+function normalizeSourceCache(raw) {
+  const cache = { version: 1, sources: {}, legacy: null };
+  if (!raw || typeof raw !== 'object') return cache;
+
+  const sources = raw.sources && typeof raw.sources === 'object' ? raw.sources : {};
+  for (const source of SOURCES) {
+    const entry = sources[source.name];
+    if (entry && Array.isArray(entry.domains) && typeof entry.ts === 'number') {
+      cache.sources[source.name] = { domains: entry.domains.filter(isValidHostname), ts: entry.ts };
+    }
+  }
+
+  if (raw.legacy && Array.isArray(raw.legacy.domains) && raw.legacy.domains.length > 0) {
+    cache.legacy = {
+      domains: raw.legacy.domains.filter(isValidHostname),
+      ts: typeof raw.legacy.ts === 'number' ? raw.legacy.ts : 0
+    };
+  }
+  return cache;
+}
+
+/**
+ * Načte per-source cache. Při aktualizaci ze starší verze převezme původní
+ * sloučený seznam jako `legacy` — neznámá stará data nelze poctivě přiřadit
+ * konkrétnímu zdroji, ale ani je nechceme uživateli zahodit.
+ */
+async function loadSourceCache() {
+  const r = await chrome.storage.local.get([
+    STORAGE_KEYS.SOURCE_CACHE, STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS
+  ]);
+  const cache = normalizeSourceCache(r[STORAGE_KEYS.SOURCE_CACHE]);
+
+  const hasPerSource = Object.keys(cache.sources).length > 0;
+  const oldDomains = Array.isArray(r[STORAGE_KEYS.DOMAINS])
+    ? r[STORAGE_KEYS.DOMAINS].filter(isValidHostname)
+    : [];
+
+  if (!hasPerSource && !cache.legacy && oldDomains.length > 0) {
+    cache.legacy = {
+      domains: oldDomains,
+      ts: typeof r[STORAGE_KEYS.CACHE_TS] === 'number' ? r[STORAGE_KEYS.CACHE_TS] : 0
+    };
+  }
+  return cache;
+}
+
+/** Konzervativní stáří celého seznamu — nejstarší úspěch, který v něm je. */
+function computeCacheTs(cache) {
+  const stamps = SOURCES
+    .map(source => cache.sources[source.name])
+    .filter(Boolean)
+    .map(entry => entry.ts);
+  if (cache.legacy) stamps.push(cache.legacy.ts);
+  return stamps.length > 0 ? Math.min(...stamps) : null;
+}
+
+/** Poskládá sloučený seznam z platných per-source cache. */
+function mergeSourceCache(cache) {
+  const merged = [];
+  const seen = new Set();
+
+  const addAll = (list) => {
+    for (const domain of list) {
+      if (merged.length >= MAX_MERGED_DOMAINS) return;
+      if (seen.has(domain)) continue;
+      seen.add(domain);
+      merged.push(domain);
+    }
+  };
+
+  for (const source of SOURCES) {
+    const entry = cache.sources[source.name];
+    if (entry) addAll(entry.domains);
+  }
+  if (cache.legacy) addAll(cache.legacy.domains);
+
+  return merged;
+}
+
+// Jedna sdílená promise pro probíhající refresh, aby pomalejší starší
+// požadavek nepřepsal novější výsledek.
+let refreshInFlight = null;
+
+function fetchAndCacheDomains() {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = doFetchAndCache().finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
+}
+
+async function doFetchAndCache() {
+  const cache = await loadSourceCache();
   const results = await Promise.all(SOURCES.map(fetchOneSource));
+  const now = Date.now();
 
-  // Merge do unique setu
-  const merged = new Set();
-  for (const arr of results) {
-    for (const d of arr) merged.add(d);
+  const refreshed = [];
+  const failed = [];
+
+  for (const result of results) {
+    if (result.ok) {
+      // Úspěch přepíše cache jen svého zdroje.
+      cache.sources[result.name] = { domains: result.domains, ts: now };
+      refreshed.push(result.name);
+    } else {
+      // Při chybě zůstává dosavadní seznam i datum posledního úspěchu.
+      failed.push(result.name);
+    }
   }
 
-  if (merged.size === 0) {
-    console.warn('[BOIT] Žádný zdroj nevrátil domény — cache nepřepisuji.');
-    return;
+  // Přechodový fallback vyřadíme, jakmile máme čerstvá data z obou původních zdrojů.
+  if (cache.legacy && LEGACY_SOURCE_NAMES.every(name => cache.sources[name])) {
+    cache.legacy = null;
   }
 
-  const domains = [...merged].slice(0, MAX_DOMAINS);
-  await chrome.storage.local.set({
-    [STORAGE_KEYS.DOMAINS]: domains,
-    [STORAGE_KEYS.CACHE_TS]: Date.now()
-  });
-  console.log('[BOIT] Celkem uloženo ' + domains.length + ' unikátních domén (ČOI + SOI).');
+  const merged = mergeSourceCache(cache);
+  const cacheTs = computeCacheTs(cache);
+
+  const write = { [STORAGE_KEYS.SOURCE_CACHE]: cache };
+  if (merged.length > 0 || refreshed.length > 0) {
+    write[STORAGE_KEYS.DOMAINS] = merged;
+    write[STORAGE_KEYS.CACHE_TS] = cacheTs;
+  }
+  await chrome.storage.local.set(write);
+
+  const status = {
+    refreshed,
+    failed,
+    partial: failed.length > 0,
+    complete: failed.length === 0,
+    domainCount: merged.length,
+    migrating: Boolean(cache.legacy)
+  };
+
+  if (status.complete) {
+    console.log('[BOIT] Uloženo ' + merged.length + ' unikátních domén (' + refreshed.join(' + ') + ').');
+  } else {
+    console.warn('[BOIT] Částečná obnova. Načteno: ' + (refreshed.join(', ') || 'nic') +
+      '; selhalo: ' + failed.join(', ') + '. Poslední funkční data zůstávají.');
+  }
+  return status;
 }
 
 async function refreshIfNeeded() {
-  const r = await chrome.storage.local.get([STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS]);
-  const age = r[STORAGE_KEYS.CACHE_TS] ? Date.now() - r[STORAGE_KEYS.CACHE_TS] : Infinity;
+  const r = await chrome.storage.local.get([
+    STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS, STORAGE_KEYS.SOURCE_CACHE
+  ]);
+  const cache = normalizeSourceCache(r[STORAGE_KEYS.SOURCE_CACHE]);
+
+  // Po aktualizaci doplňku chybí cache nového zdroje i při čerstvém seznamu.
+  const missingSource = SOURCES.some(source => !cache.sources[source.name]);
+  const age = typeof r[STORAGE_KEYS.CACHE_TS] === 'number'
+    ? Date.now() - r[STORAGE_KEYS.CACHE_TS]
+    : Infinity;
   const hasData = Array.isArray(r[STORAGE_KEYS.DOMAINS]) && r[STORAGE_KEYS.DOMAINS].length > 0;
-  if (!hasData || age > CACHE_TTL) await fetchAndCacheDomains();
+
+  // Hraniční stáří přesně TTL je už splatné.
+  if (!hasData || missingSource || age >= CACHE_TTL) await fetchAndCacheDomains();
 }
 
 // ─── Statistiky ─────────────────────────────────────────────────────────
@@ -259,33 +496,6 @@ async function removeWhitelist(hostname) {
   return existed;
 }
 
-function buildReportMailto(hostname, signals, email) {
-  const host = normalizeHostname(hostname);
-  if (!isValidHostname(host)) return null;
-
-  // Default email pokud nebyl předán nebo je neplatný
-  const ALLOWED_EMAILS = new Set(['podatelna@coi.gov.cz', 'info@soi.sk']);
-  const reportEmail = ALLOWED_EMAILS.has(email) ? email : 'podatelna@coi.gov.cz';
-
-  const safeSignals = Array.isArray(signals)
-    ? signals
-        .map(s => typeof s?.title === 'string' ? s.title.trim() : '')
-        .filter(Boolean)
-        .slice(0, 10)
-    : [];
-
-  const subject = encodeURIComponent('Podezřelý e-shop: ' + host);
-  const body = encodeURIComponent(
-    'Dobrý den,\n\n' +
-    'rád bych upozornil na podezřelý e-shop: https://' + host + '\n\n' +
-    'Zjištěná rizika:\n' +
-    (safeSignals.length ? safeSignals.map(s => '- ' + s).join('\n') : '(žádná automatická detekce)') +
-    '\n\nDěkuji.'
-  );
-
-  return 'mailto:' + reportEmail + '?subject=' + subject + '&body=' + body;
-}
-
 // ─── Ikonka ─────────────────────────────────────────────────────────────
 
 function consumeLastError() {
@@ -315,7 +525,7 @@ function setIconForTab(tabId, isRisky) {
     chrome.action.setBadgeBackgroundColor({ tabId, color: "#FF2D78" }, consumeLastError);
     chrome.action.setTitle({
       tabId,
-      title: isRisky ? "BOIT: Rizikový e-shop (dle ČOI)" : "BOIT Rizikové E-shopy — ochrana aktivní"
+      title: isRisky ? "BOIT: Web na seznamu rizikových webů" : "BOIT Rizikové E-shopy — ochrana aktivní"
     }, consumeLastError);
   });
 }
@@ -428,13 +638,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return true;
     }
 
-    case 'REPORT_COI': {
-      const mailtoUrl = buildReportMailto(msg.hostname, msg.signals, msg.email);
-      if (!mailtoUrl) {
-        sendResponse({ ok: false, error: 'invalid_hostname' });
-        return false;
-      }
-      chrome.tabs.create({ url: mailtoUrl }, () => {
+    case 'OPEN_REPORT_PAGE': {
+      // Otevře pouze pevnou stránku projektu. Žádný parametr, žádná doména,
+      // žádné signály — o kontrolovaném webu se ven nedostane nic.
+      chrome.tabs.create({ url: REPORT_PAGE_URL }, () => {
         if (chrome.runtime.lastError) {
           sendResponse({ ok: false, error: chrome.runtime.lastError.message });
         } else {
@@ -445,17 +652,32 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     case 'FORCE_REFRESH': {
-      chrome.storage.local.remove([STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS])
-        .then(() => fetchAndCacheDomains())
-        .then(() => sendResponse({ ok: true }));
+      // Cache se předem NEMAŽE. Když všechny zdroje selžou, data zůstanou
+      // a odpověď to přizná místo hlášení úspěchu.
+      fetchAndCacheDomains()
+        .then(status => sendResponse({ ok: status.refreshed.length > 0, ...status }))
+        .catch(err => sendResponse({ ok: false, error: err?.message || 'refresh_failed' }));
       return true;
     }
 
     case 'GET_STATUS': {
-      chrome.storage.local.get([STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS]).then(r => {
+      chrome.storage.local.get([
+        STORAGE_KEYS.DOMAINS, STORAGE_KEYS.CACHE_TS, STORAGE_KEYS.SOURCE_CACHE
+      ]).then(r => {
+        const cache = normalizeSourceCache(r[STORAGE_KEYS.SOURCE_CACHE]);
         sendResponse({
           domainCount: (r[STORAGE_KEYS.DOMAINS] || []).length,
-          cacheAge: r[STORAGE_KEYS.CACHE_TS] ? Date.now() - r[STORAGE_KEYS.CACHE_TS] : null
+          cacheAge: r[STORAGE_KEYS.CACHE_TS] ? Date.now() - r[STORAGE_KEYS.CACHE_TS] : null,
+          migrating: Boolean(cache.legacy),
+          sources: SOURCES.map(source => {
+            const entry = cache.sources[source.name];
+            return {
+              name: source.name,
+              loaded: Boolean(entry),
+              count: entry ? entry.domains.length : 0,
+              ts: entry ? entry.ts : null
+            };
+          })
         });
       });
       return true;

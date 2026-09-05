@@ -6,10 +6,10 @@
 
 # BOIT Rizikové E-shopy
 
-**Prohlížečové rozšíření, které vás varuje před podvodnými e-shopy ze seznamů České obchodní inspekce (ČOI) a Slovenskej obchodnej inšpekcie (SOI) — a detekuje další podezřelé signály přímo na stránce.**
+**Prohlížečové rozšíření, které vás varuje před rizikovými weby ze seznamů České obchodní inspekce (ČOI), Slovenskej obchodnej inšpekcie (SOI) a ze seznamu BOIT — a detekuje další podezřelé signály přímo na stránce.**
 
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-v1.7.0-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
-[![Firefox Add-on](https://img.shields.io/badge/Firefox%20Add--on-v1.7.0-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-v1.8.0-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
+[![Firefox Add-on](https://img.shields.io/badge/Firefox%20Add--on-v1.8.0-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-FF2D78?style=for-the-badge)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-B44FE8?style=for-the-badge)](https://developer.chrome.com/docs/extensions/develop/migrate)
 [![Made by BOIT](https://img.shields.io/badge/Made%20by-BOIT%20Cyber%20Security-D3FC23?style=for-the-badge)](https://boit.cz)
@@ -30,10 +30,15 @@
 
 Před každýma Vánocema varujeme na školeních lidi před rizikovými e-shopy. Roky jsme k tomu používali databázi ČOI + jeden starší prohlížečový doplněk — ten ale dávno není udržovaný. Tak jsme postavili nový. A od verze 1.7 podporujeme i **slovenský trh** přes seznam SOI.
 
-**BOIT Rizikové E-shopy** v reálném čase porovnává navštívené weby s oficiálními seznamy rizikových e-shopů:
+**BOIT Rizikové E-shopy** v reálném čase porovnává navštívené weby se třemi seznamy:
 
-- 🇨🇿 [**Česká obchodní inspekce**](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/) (ČOI)
-- 🇸🇰 [**Slovenská obchodná inšpekcia**](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody) (SOI)
+- 🇨🇿 [**Česká obchodní inspekce**](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/) (ČOI) — oficiální seznam úřadu
+- 🇸🇰 [**Slovenská obchodná inšpekcia**](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody) (SOI) — oficiální seznam úřadu
+- 🛡️ [**BOIT seznam**](https://github.com/spajk-cz/boit-risk-feed) — vlastní seznam vedený BOIT Cyber Security
+
+BOIT **není úřad** a jeho seznam není úřední rozhodnutí. Je to vlastní seznam, který spravujeme
+veřejně v [samostatném repozitáři](https://github.com/spajk-cz/boit-risk-feed), kde je u každé
+změny vidět důvod i historie. Zařazení na kterýkoli ze seznamů je varování, nikoli zákaz.
 
 Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varování. Navíc rozšíření **detekuje další podvodné signály** — chybějící IČO, podezřelé TLD, jen bankovní převod, extrémní slevy a další.
 
@@ -45,7 +50,7 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
 ## Co umí
 
 ### Detekce a varování
-- **Kontrola proti seznamům ČOI a SOI** — porovnání domény při každé návštěvě
+- **Kontrola proti seznamům ČOI, SOI a BOIT** — porovnání domény při každé návštěvě, lokálně
 - **Výrazné varování** — blur stránky + neon overlay v BOIT designu
 - **7 typů detekce podvodných signálů** přímo na stránce:
   - Nešifrované spojení (HTTP)
@@ -64,12 +69,12 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
 
 ### Akce
 - **Whitelist na 24 h** — pokud víte, že je web v pořádku
-- **Smart nahlášení podvodu** — `.sk` doména → SOI, ostatní → ČOI (jedním klikem, předvyplněný e-mail)
-- **Automatická aktualizace seznamů** — paralelně oba zdroje každých 6 hodin
+- **Nahlášení a odvolání** — jedním klikem na [stránku projektu](NAHLASENI.md) s kontaktem `doplnek@boit.cz`; odkaz je bez parametrů, kontrolovaná doména se nikam neodesílá
+- **Automatická aktualizace seznamů** — paralelně všechny tři zdroje každých 6 hodin; výpadek jednoho zdroje nesmaže data ostatních
 
 ### Bezpečnost a soukromí
 - **Žádné trackery, žádná analytika, žádné reklamy**
-- **Vše běží lokálně** — jediné síťové operace jsou stažení seznamů z `coi.gov.cz` a `soi.sk`
+- **Vše běží lokálně** — jediné síťové operace jsou stažení seznamů z `coi.gov.cz`, `soi.sk` a `spajk-cz.github.io`
 - **Firefox AMO „no data collected" badge** — manifest deklaruje `data_collection_permissions: ["none"]`, takže Firefox uživateli při instalaci i v `about:addons` explicitně potvrzuje, že žádná data nesbíráme
 - **Hardened proti bypass pokusům**:
   - Closed Shadow DOM (`mode: 'closed'`) — stránka se nedostane k vnitřkům overlaye
@@ -136,18 +141,52 @@ boit-rizikove-eshopy/
 ├── icons/                # Ikonky safe/risky × 4 velikosti
 ├── PRIVACY.md            # Privacy policy
 └── LICENSE               # MIT
+
+NAHLASENI.md              # Kontakt pro nahlášení domény i žádost o vyřazení
+
+tests/                    # Node testy background skriptů obou variant
+docs/                     # Testovací protokol
 ```
+
+### Zdroje dat a cache
+
+Každý zdroj má vlastní cache (`boit_source_cache`) s posledním platným seznamem a časem
+posledního **úspěšného** načtení. Po každé obnově se sloučený seznam skládá znovu z těchto
+per-source cache do původního klíče `boit_rizikove_domains`, takže:
+
+- výpadek jednoho zdroje nesmaže data ostatních a nepřepíše jejich datum úspěchu,
+- doména odebraná z BOIT feedu po úspěšné obnově zmizí — pokud ji neuvádí jiný zdroj,
+- ruční obnova nikdy nemaže cache předem; když selžou všechny zdroje, data zůstanou
+  a popup to označí jako částečnou obnovu, ne jako úspěch.
+
+BOIT feed se čte přísným parserem podle pevného kontraktu (povinná hlavička
+`# BOIT risk feed v1`, jedna doména na řádek, žádné URL, porty, wildcardy ani IP adresy).
+Při jakémkoli neplatném řádku se odmítne celá odpověď a použije se poslední funkční cache.
+Hlavička bez domén je naopak platná prázdná aktualizace. Formát a validátor jsou popsané
+v repozitáři [boit-risk-feed](https://github.com/spajk-cz/boit-risk-feed).
+
+### Testy
+
+```bash
+node --test tests/*.test.mjs
+```
+
+Testy načítají skutečné `Chrome/background.js` i `Firefox/background.js` do `node:vm`
+s namockovaným `chrome`/`browser` API, fetchem, storage, časem a alarmy — netestují
+přepsané kopie. Žádné runtime závislosti, stačí Node.
 
 ### Datový tok
 
 ```text
 ┌─────────────┐                     ┌──────────────────┐
 │ coi.gov.cz  │ ──┐                 │                  │
-└─────────────┘   │  fetch každých  │ background.js    │
-                  ├─ 6h,paralelně ─▶│ (event page /    │
-┌─────────────┐   │   Promise.all   │  service worker) │
-│  soi.sk     │ ──┘                 └────────┬─────────┘
-└─────────────┘                              │ merge → storage.local
+└─────────────┘   │                 │ background.js    │
+┌─────────────┐   │  fetch každých  │ (event page /    │
+│  soi.sk     │ ──┼─ 6h,paralelně ─▶│  service worker) │
+└─────────────┘   │   Promise.all   │                  │
+┌─────────────┐   │                 └────────┬─────────┘
+│ BOIT feed   │ ──┘                          │ per-source cache
+└─────────────┘                              │ → merge → storage.local
                                              ▼
 ┌─────────────┐  CHECK_DOMAIN       ┌──────────────────┐
 │ content.js  │ ──────────────────▶ │ message handler  │
@@ -169,6 +208,7 @@ boit-rizikove-eshopy/
 | `tabs` | Aktualizace ikonky a stavu pro aktivní tab |
 | `host_permissions: coi.gov.cz` | Stahování oficiálního seznamu ČOI |
 | `host_permissions: www.soi.sk` | Stahování oficiálního seznamu SOI |
+| `host_permissions: spajk-cz.github.io` | Stahování BOIT seznamu (GitHub Pages) |
 | `content_scripts` na všech webech | Kontrola domény proti seznamům |
 
 ***
@@ -177,7 +217,7 @@ boit-rizikove-eshopy/
 
 **Tato extension nesbírá, neukládá ani nepřenáší žádné osobní údaje.** Všechna data zůstávají v prohlížeči.
 
-Jediné síťové operace jsou stažení seznamů domén z `coi.gov.cz` a `www.soi.sk` (každých 6 hodin) — bez cookies, bez identifikátorů (`credentials: 'omit'`).
+Jediné síťové operace jsou stažení seznamů domén z `coi.gov.cz`, `www.soi.sk` a `spajk-cz.github.io` (každých 6 hodin) — bez cookies, bez identifikátorů (`credentials: 'omit'`). Stahuje se vždy celý seznam, nikdy se neposílá dotaz na konkrétní navštívenou doménu.
 
 Plné znění viz [`PRIVACY.md`](PRIVACY.md).
 
@@ -204,15 +244,27 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 - [x] **v1.5** — Heatmap signálů, počítadlo, report tlačítko
 - [x] **v1.6** — Closed Shadow DOM hardening
 - [x] **v1.7** — 🇸🇰 SOI integrace + 🦊 Firefox / Firefox for Android port (Manifest V3)
-- [ ] **v1.8** — Detekce typosquatu (Levenshtein vůči TOP 100 CZ/SK e-shopů)
-- [ ] **v1.9** — Whois lookup pro nedávno zaregistrované domény
-- [ ] **v2.0** — Crowdsourced report API (volitelný opt-in)
+- [x] **v1.8** — 🛡️ Vlastní BOIT seznam jako třetí zdroj + odolná per-source cache
+- [ ] **v1.9** — Detekce typosquatu (Levenshtein vůči TOP 100 CZ/SK e-shopů)
+- [ ] **v2.0** — Whois lookup pro nedávno zaregistrované domény
+- [ ] **v2.1** — Crowdsourced report API (volitelný opt-in)
 
 ***
 
 ## Changelog
 
-### v1.7.0 (současná)
+### v1.8.0 (současná)
+- 🛡️ **Přidán BOIT seznam** jako třetí zdroj dat — vlastní feed spravovaný veřejně v repozitáři [boit-risk-feed](https://github.com/spajk-cz/boit-risk-feed)
+- 🔒 Přísný parser feedu s pevným datovým kontraktem: chybný obsah odmítne celou odpověď místo tichého „opravování"
+- 💾 **Per-source cache** — výpadek jednoho zdroje už nesmaže data ostatních; ruční obnova nemaže cache předem
+- ♻️ Doména odebraná z BOIT feedu po úspěšné obnově zmizí, pokud ji neuvádí ČOI ani SOI
+- 📊 Popup rozliší **částečnou obnovu** od plného úspěchu a ukáže, který zdroj se nenačetl
+- 🔧 Opraveno tiché oříznutí sloučeného seznamu na 5 000 položek, kvůli kterému mohl třetí zdroj celý vypadnout
+- ⚑ **Tlačítko „Nahlásit" už neposílá mailto na ČOI/SOI** — otevře [stránku projektu](NAHLASENI.md) s kontaktem `doplnek@boit.cz` pro nahlášení domény i pro žádost o vyřazení; odkaz je bez parametrů, takže se kontrolovaná doména nikam neodesílá
+- ✍️ Texty varování už netvrdí, že jde vždy o „oficiální seznam" nebo o neověřitelného provozovatele — platí i pro doménu nalezenou jen v BOIT seznamu
+- ✅ Node testy background skriptů obou variant (bez runtime závislostí)
+
+### v1.7.0
 - 🇸🇰 **Přidána podpora SOI** (Slovenská obchodná inšpekcia) jako druhý zdroj dat
 - 🦊 **Firefox port** — doplněk dostupný i pro Firefox 140+ (desktop) a Firefox for Android 142+
 - 🔒 Firefox manifest deklaruje `data_collection_permissions: ["none"]` — explicitní "no data collected" badge v installeru
@@ -256,8 +308,10 @@ To znamená: použij, fork, modifikuj, prodávej. Jen na nás laskavě nezapome�
 - **Další BOIT nástroje:** [boit.cz/nastroje](https://boit.cz/nastroje)
 - **LinkedIn:** [BOIT Cyber Security](https://www.linkedin.com/company/boit-cz/)
 - **Kontakt:** [info@boit.cz](mailto:info@boit.cz)
+- **Nahlášení domény / žádost o vyřazení:** [doplnek@boit.cz](mailto:doplnek@boit.cz) · [NAHLASENI.md](NAHLASENI.md)
 - **Zdroj dat (CZ):** [coi.gov.cz/rizikove-e-shopy](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/)
 - **Zdroj dat (SK):** [soi.sk/rizikove-internetove-obchody](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody)
+- **Zdroj dat (BOIT):** [boit-risk-feed](https://github.com/spajk-cz/boit-risk-feed) · [blacklist.txt](https://spajk-cz.github.io/boit-risk-feed/blacklist.txt)
 
 ***
 
