@@ -49,7 +49,7 @@ konstanty a funkce vystaví ven.
 | Validita JSON | `JSON.parse` obou manifestů | **PROŠLO** |
 | Whitespace | `git diff --check` (sledované i nové soubory) | **PROŠLO** |
 | Obsah ZIPů | `unzip -l` obou balíčků | **PROŠLO** — `manifest.json` v kořeni, verze 1.8.0, bez `tests/`, `.git`, `.DS_Store`, `node_modules` i bez druhého prohlížeče |
-| `web-ext lint` | — | **NEPROVEDENO** — `web-ext` není na stroji nainstalovaný. Lint Firefox balíčku nelze označit za prošlý. |
+| `web-ext lint` | `npx web-ext lint --source-dir Firefox` | **PROŠLO** — 0 errors, 0 notices, 0 warnings |
 
 ## Ověření produkční feed URL
 
@@ -74,9 +74,10 @@ po normalizaci, `notrt.com` → bez shody.
 
 ## NEPROVEDENO — manuální ověření v prohlížečích
 
-Prohlížeče nebyly v této relaci k dispozici. Následující kroky je nutné projít
-ručně, než se balíčky nahrají do obchodů. Do té doby jsou označené
-**„k ručnímu ověření"**.
+Prohlížeče nebyly v této relaci k dispozici — doplněk se nedá nainstalovat ani
+otestovat bez skutečného Chrome a Firefox profilu. Následující kroky je nutné
+projít ručně, než se balíčky nahrají do obchodů. Do té doby jsou balíčky
+označené **„k ručnímu ověření"**.
 
 ### Chrome
 
