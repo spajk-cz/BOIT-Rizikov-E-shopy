@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>BOIT Rizikové E-shopy</title>
+  <!-- Musí běžet před vykreslením, jinak by ručně zvolené téma probliklo -->
+  <script src="theme-init.js"></script>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -20,8 +22,19 @@
       </svg>
     </div>
     <div class="header-right">
-      <div class="status-dot" id="statusDot"></div>
-      <span class="status-label" id="statusLabel">—</span>
+      <div class="status">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-label" id="statusLabel">—</span>
+      </div>
+      <!-- Přepínač tématu: Auto (podle prohlížeče) / Světlý / Tmavý -->
+      <div class="theme-switch" id="themeSwitch" role="radiogroup" aria-label="Barevný režim">
+        <button class="theme-switch-option" type="button" role="radio" data-theme-value="auto"
+                aria-checked="true" title="Podle prohlížeče" aria-label="Podle prohlížeče">A</button>
+        <button class="theme-switch-option" type="button" role="radio" data-theme-value="light"
+                aria-checked="false" tabindex="-1" title="Světlý režim" aria-label="Světlý režim">☀</button>
+        <button class="theme-switch-option" type="button" role="radio" data-theme-value="dark"
+                aria-checked="false" tabindex="-1" title="Tmavý režim" aria-label="Tmavý režim">☾</button>
+      </div>
     </div>
   </div>
 
@@ -89,11 +102,12 @@
   <div class="footer">
     <div class="footer-hashtag">#DělámeČeskoBezpečnější</div>
     <div class="footer-link-row">
-      <span class="footer-sub">v1.9.0</span>
+      <span class="footer-sub">v1.10.0</span>
       <span class="footer-link" id="boitLink">boit.cz →</span>
     </div>
   </div>
 
+  <script src="theme-toggle.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

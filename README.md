@@ -8,8 +8,8 @@
 
 **Prohlížečové rozšíření, které vás varuje před rizikovými weby ze seznamů České obchodní inspekce (ČOI), Slovenskej obchodnej inšpekcie (SOI), Českého telekomunikačního úřadu (ČTÚ) a ze seznamu BOIT — a detekuje další podezřelé signály přímo na stránce.**
 
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-v1.9.0-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
-[![Firefox Add-on](https://img.shields.io/badge/Firefox%20Add--on-v1.9.0-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-v1.10.0-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
+[![Firefox Add-on](https://img.shields.io/badge/Firefox%20Add--on-v1.10.0-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-FF2D78?style=for-the-badge)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-B44FE8?style=for-the-badge)](https://developer.chrome.com/docs/extensions/develop/migrate)
 [![Made by BOIT](https://img.shields.io/badge/Made%20by-BOIT%20Cyber%20Security-D3FC23?style=for-the-badge)](https://boit.cz)
@@ -72,6 +72,7 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
 - **Počítadlo ochrany** — kolikrát vás rozšíření varovalo (anonymně, lokálně)
 - **Rozbalovací detaily** — přehledné varování, podrobnosti pod „Více detailů"
 - **Cyberpunk vizuál** — BOIT brand identity, JetBrains Mono, neon palette
+- **Tmavý i světlý režim** — popup i varování se řídí tématem prohlížeče, v popupu jde přepnout ručně (`A` / `☀` / `☾`); při tisku varování se vždy použije světlá varianta
 
 ### Akce
 - **Whitelist na 24 h** — pokud víte, že je web v pořádku
@@ -144,13 +145,15 @@ boit-rizikove-eshopy/
 ├── background.js         # Background — fetch, cache, message routing
 ├── content.js            # Detekce + injection overlay (hardened)
 ├── popup.html/css/js     # Toolbar popup UI
+├── theme-init.js         # Ručně zvolené téma ještě před vykreslením popupu
+├── theme-toggle.js       # Přepínač Auto / Světlý / Tmavý
 ├── icons/                # Ikonky safe/risky × 4 velikosti
 ├── PRIVACY.md            # Privacy policy
 └── LICENSE               # MIT
 
 NAHLASENI.md              # Kontakt pro nahlášení domény i žádost o vyřazení
 
-tests/                    # Node testy background skriptů obou variant
+tests/                    # Node testy obou variant (background, texty varování, téma)
 docs/                     # Testovací protokol
 ```
 
@@ -184,7 +187,9 @@ node --test tests/*.test.mjs
 
 Testy načítají skutečné `Chrome/background.js` i `Firefox/background.js` do `node:vm`
 s namockovaným `chrome`/`browser` API, fetchem, storage, časem a alarmy — netestují
-přepsané kopie. Žádné runtime závislosti, stačí Node.
+přepsané kopie. Testy tématu spouští skutečné skripty popupu v minimálním DOM a hlídají,
+že světlá paleta pokrývá všechny tokeny a splňuje kontrast WCAG AA. Žádné runtime
+závislosti, stačí Node.
 
 ### Datový tok
 
@@ -216,7 +221,7 @@ přepsané kopie. Žádné runtime závislosti, stačí Node.
 
 | Permission | Důvod |
 |---|---|
-| `storage` | Cache seznamů ČOI/SOI, nastavení, statistiky — vše lokálně |
+| `storage` | Cache seznamů, nastavení (včetně barevného režimu), statistiky — vše lokálně |
 | `alarms` | Periodická aktualizace seznamů (6h interval) |
 | `tabs` | Aktualizace ikonky a stavu pro aktivní tab |
 | `host_permissions: coi.gov.cz` | Stahování oficiálního seznamu ČOI |
@@ -260,6 +265,7 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 - [x] **v1.7** — 🇸🇰 SOI integrace + 🦊 Firefox / Firefox for Android port (Manifest V3)
 - [x] **v1.8** — 🛡️ Vlastní BOIT seznam jako třetí zdroj + odolná per-source cache
 - [x] **v1.9** — 🏛️ Seznam blokovaných webů ČTÚ jako čtvrtý zdroj
+- [x] **v1.10** — 🌗 Tmavý a světlý režim podle prohlížeče + ruční přepínač
 - [ ] **v2.0** — Detekce typosquatu (Levenshtein vůči TOP 100 CZ/SK e-shopů)
 - [ ] **v2.1** — Whois lookup pro nedávno zaregistrované domény
 - [ ] **v2.2** — Crowdsourced report API (volitelný opt-in)
@@ -268,7 +274,15 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 
 ## Changelog
 
-### v1.9.0 (současná)
+### v1.10.0 (současná)
+- 🌗 **Tmavý a světlý režim** — popup i varovací overlay se řídí tématem prohlížeče (`prefers-color-scheme`)
+- 🎚️ **Přepínač v hlavičce popupu** `A | ☀ | ☾` — Auto podle prohlížeče, nebo ručně světlý či tmavý; volba platí i pro overlay a projeví se na otevřeném varování okamžitě
+- ♿ Přepínač je přístupná radio skupina (ovládání šipkami, `aria-checked`); ručně zvolené téma při otevření popupu neproblikne
+- 🎨 Světlá paleta splňuje kontrast WCAG AA — neonová zelená se v textu nahrazuje zvýrazňovačem, tlačítko „Odejít" je ve světlém režimu růžové
+- 🖨️ Při tisku stránky s varováním se vždy použije světlá varianta
+- 🔒 Hardening overlaye beze změny (closed Shadow DOM, MutationObserver, `isTrusted`); žádná nová oprávnění
+
+### v1.9.0
 - 🏛️ **Přidán seznam blokovaných webů ČTÚ** jako čtvrtý zdroj — nepovolené internetové hry, nelegální nabídka léčiv a další kategorie
 - 🔒 CSV parser bez závislostí; hostname se tahá přes `URL()`, záznam s konkrétní cestou se přeskočí, aby jeden blokovaný článek neoznačil celý legitimní web
 - ✍️ **Text varování se skládá podle zdroje shody** — u záznamu z ČTÚ se místo „podvodný e-shop" uvádí, že jde o oficiální seznam blokovaných webů ČTÚ

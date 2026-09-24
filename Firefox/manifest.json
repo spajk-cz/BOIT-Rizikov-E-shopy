@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "BOIT Rizikové E-shopy",
   "short_name": "BOIT Rizikové E-shopy",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Varuje vás při návštěvě rizikových e-shopů ze seznamů ČOI (CZ), SOI (SK), ČTÚ a BOIT. Navíc detekuje další podvodné signály.",
   "author": "BOIT Cyber Security s.r.o.",
   "homepage_url": "https://boit.cz",

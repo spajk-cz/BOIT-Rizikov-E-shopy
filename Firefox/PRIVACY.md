@@ -2,7 +2,7 @@
 
 ## BOIT Rizikové E-shopy (Chrome extension)
 
-**Poslední aktualizace:** 5. 9. 2026 (verze 1.9.0)
+**Poslední aktualizace:** 24. 9. 2026 (verze 1.10.0)
 
 ---
 
@@ -18,6 +18,7 @@ Extension ukládá **lokálně v prohlížeči** (přes `chrome.storage.local`) 
 - **Časové razítko** posledního úspěšného načtení, zvlášť pro každý zdroj
 - **Anonymní počítadlo** — kolikrát vás extension varovala a kolik unikátních rizikových domén to bylo
 - **Váš whitelist** — domény, které jste si ručně povolil(a)
+- **Zvolený barevný režim** (automatický, světlý nebo tmavý) — v `storage.local` a kvůli okamžitému vykreslení i v `localStorage` popupu
 
 Tato data **nikdy neopouštějí váš prohlížeč**.
 

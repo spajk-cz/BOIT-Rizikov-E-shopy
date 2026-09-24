@@ -94,10 +94,33 @@
       if (response.isRisky && !response.whitelisted) {
         const signals = detectRiskSignals();
         browser.runtime.sendMessage({ type: 'RECORD_BLOCK', hostname }).catch(() => {});
-        injectWarning(signals, response.matchedSources);
+        // Téma se načte předem, aby overlay neprobliknul ve špatných barvách.
+        return readThemePreference().then(theme => injectWarning(signals, response.matchedSources, theme));
       }
     })
     .catch(() => { /* background nedostupný — ignorujeme */ });
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Téma overlaye — stejná volba jako v popupu (theme-toggle.js)
+  // ──────────────────────────────────────────────────────────────────────
+  const THEME_STORAGE_KEY = 'boit_ui_theme';
+
+  /** Ručně zvolené téma: 'light', 'dark', nebo 'auto' (podle prohlížeče). Nikdy nevyhodí. */
+  async function readThemePreference() {
+    try {
+      const stored = await browser.storage.local.get([THEME_STORAGE_KEY]);
+      const theme = stored[THEME_STORAGE_KEY];
+      return theme === 'light' || theme === 'dark' ? theme : 'auto';
+    } catch (e) {
+      return 'auto';
+    }
+  }
+
+  /** Bez atributu rozhoduje prefers-color-scheme prohlížeče. */
+  function applyOverlayTheme(backdrop, theme) {
+    if (theme === 'light' || theme === 'dark') backdrop.setAttribute('data-theme', theme);
+    else backdrop.removeAttribute('data-theme');
+  }
 
   // ──────────────────────────────────────────────────────────────────────
   // Detekce rizikových signálů
@@ -169,7 +192,7 @@
   // ──────────────────────────────────────────────────────────────────────
   // Overlay (hardened — closed shadow DOM + MutationObserver + CSS blur)
   // ──────────────────────────────────────────────────────────────────────
-  function injectWarning(signals, matchedSources) {
+  function injectWarning(signals, matchedSources, theme) {
     // Příznak že uživatel klikl na "Přesto vstoupit" / "Povolit 24 h" — overlay už nemá být znovu vkládán
     let dismissed = false;
 
@@ -200,6 +223,15 @@
     // Backdrop (tmavé pozadí přes celou stránku) + karta
     const backdrop = document.createElement('div');
     backdrop.className = 'boit-backdrop';
+    applyOverlayTheme(backdrop, theme);
+
+    // Změna tématu v popupu se na otevřeném varování projeví hned.
+    const onThemeChange = (changes, area) => {
+      if (area === 'local' && changes[THEME_STORAGE_KEY]) {
+        applyOverlayTheme(backdrop, changes[THEME_STORAGE_KEY].newValue);
+      }
+    };
+    browser.storage.onChanged.addListener(onThemeChange);
 
     const card = document.createElement('div');
     card.className = 'boit-card';
@@ -357,6 +389,7 @@
     function teardown() {
       dismissed = true;
       try { observer && observer.disconnect(); } catch (e) {}
+      try { browser.storage.onChanged.removeListener(onThemeChange); } catch (e) {}
       try { host.remove(); } catch (e) {}
       try {
         const bs = document.getElementById(BLUR_STYLE_ID);
@@ -441,9 +474,92 @@
         '<div class="boit-hashtag">#DělámeČeskoBezpečnější</div>',
         '<div class="boit-footer-sub">BOIT Cyber Security · boit.cz/nastroje/podvodne-weby</div>',
       '</div>',
-      '<div class="boit-footer-right">v1.9.0</div>',
+      '<div class="boit-footer-right">v1.10.0</div>',
     '</div>'
   ].join('');
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Barevné tokeny overlaye — tmavý (výchozí) a světlý režim
+  // Světlý režim se použije podle prohlížeče, při ruční volbě v popupu
+  // a vždy při tisku. Každá paleta je definovaná jen jednou, CSS bloky se
+  // z ní generují níže. Názvy mají prefix --boit-, protože custom properties
+  // stránky pronikají přes hranici shadow DOM (all: initial je neresetuje).
+  // ──────────────────────────────────────────────────────────────────────
+  const OVERLAY_DARK_TOKENS = {
+    'backdrop':        'rgba(0, 0, 0, 0.94)',
+    'card':            '#0a0a0a',
+    'card-animation':  'boitCardGlow 3s ease-in-out infinite',
+    'card-shadow':     'none',
+    'border':          '#313846',
+    'divider':         '#181B20',
+    'text':            '#D9DCE1',
+    'text-dim':        '#A8B1C4',
+    'text-mute':       '#5a6578',
+    'domain':          '#ffffff',
+    'logo':            '#D3FD22',
+    'accent-text':     '#D3FD22',
+    'marker':          'none',
+    'scanline':        '#D3FD2266',
+    'purple':          '#B44FE8',
+    'cyan':            '#00F5FF',
+    'yellow':          '#FFD600',
+    'pink':            '#FF2D78',
+    'pink-soft':       '#FF2D7815',
+    'pink-border':     '#FF2D7844',
+    'signal-bg':       '#181B20',
+    'note-bg':         '#B44FE810',
+    'leave-fill':      '#D3FD22',
+    'leave-hover':     '#e0ff50',
+    'on-leave':        '#0a0a0a',
+    'proceed-text':    '#FF2D7899',
+    'proceed-border':  '#FF2D7844',
+    'proceed-hover':   '#FF2D78',
+    'footer-sub':      '#5a5a5a',
+    'version':         '#313846',
+    'glow':            '1'
+  };
+
+  // Světlý režim: neonová zelená se v textu nahrazuje zvýrazňovačem (na bílé
+  // by měla kontrast 1.18:1), "Odejít" je růžové a "Přesto vstoupit" neutrální,
+  // aby vedle sebe nebyla dvě růžová tlačítka.
+  const OVERLAY_LIGHT_TOKENS = {
+    'backdrop':        'rgba(12, 14, 20, 0.78)',
+    'card':            '#FFFFFF',
+    'card-animation':  'none',
+    'card-shadow':     '0 0 0 1px #C4104F55, 0 12px 40px rgba(0, 0, 0, 0.25)',
+    'border':          '#D4D9E1',
+    'divider':         '#E8EBF0',
+    'text':            '#11141A',
+    'text-dim':        '#3D4556',
+    'text-mute':       '#5F6778',
+    'domain':          '#11141A',
+    'logo':            '#11141A',
+    'accent-text':     '#11141A',
+    'marker':          'linear-gradient(transparent 55%, #D3FD22 55%, #D3FD22 92%, transparent 92%)',
+    'scanline':        '#D3FD22',
+    'purple':          '#7A22B5',
+    'cyan':            '#006B75',
+    'yellow':          '#7A5A00',
+    'pink':            '#C4104F',
+    'pink-soft':       '#C4104F0f',
+    'pink-border':     '#C4104F55',
+    'signal-bg':       '#F3F4F7',
+    'note-bg':         '#7A22B50d',
+    'leave-fill':      '#FF2D78',
+    'leave-hover':     '#ff4a8b',
+    'on-leave':        '#000000',
+    'proceed-text':    '#5F6778',
+    'proceed-border':  '#D4D9E1',
+    'proceed-hover':   '#11141A',
+    'footer-sub':      '#5F6778',
+    'version':         '#8a92a3',
+    'glow':            '0'
+  };
+
+  /** Převede paletu na deklarace custom properties. */
+  function tokenDeclarations(tokens) {
+    return Object.keys(tokens).map(name => '  --boit-' + name + ': ' + tokens[name] + ';').join('\n');
+  }
 
   // ──────────────────────────────────────────────────────────────────────
   // CSS — barvy vyvážené: zelená = brand, růžová JEN pro threat, fialová = akcenty
@@ -454,10 +570,32 @@
     '  box-sizing: border-box;',
     '  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;',
     '}',
+
+    // ── TÉMA ── tmavý základ, světlý podle prohlížeče (pokud uživatel nevybral
+    // ručně tmavý), podle ruční volby a při tisku
+    '.boit-backdrop {',
+    tokenDeclarations(OVERLAY_DARK_TOKENS),
+    '}',
+    '@media (prefers-color-scheme: light) {',
+    '  .boit-backdrop:not([data-theme="dark"]) {',
+    tokenDeclarations(OVERLAY_LIGHT_TOKENS),
+    '  }',
+    '}',
+    '.boit-backdrop[data-theme="light"] {',
+    tokenDeclarations(OVERLAY_LIGHT_TOKENS),
+    '}',
+    '@media print {',
+    '  .boit-backdrop {',
+    tokenDeclarations(OVERLAY_LIGHT_TOKENS),
+    '    --boit-backdrop: #FFFFFF;',
+    '  }',
+    '  .boit-scanline { display: none; }',
+    '}',
+
     '.boit-backdrop {',
     '  position: fixed; inset: 0; z-index: 2147483647;',
     '  display: flex; align-items: center; justify-content: center;',
-    '  background: rgba(0, 0, 0, 0.94); padding: 20px;',
+    '  background: var(--boit-backdrop); padding: 20px;',
     '  overflow: auto;',
     '  animation: boitFadeIn 0.25s ease;',
     '}',
@@ -469,6 +607,7 @@
     '  0%   { transform: translateY(-4px); opacity: 0.6; }',
     '  100% { transform: translateY(100vh); opacity: 0.2; }',
     '}',
+    // Pulzující glow jen v tmavém režimu (ve světlém je card-animation: none)
     '@keyframes boitCardGlow {',
     '  0%,100% { box-shadow: 0 0 0 1px #313846, 0 0 30px #FF2D7822; }',
     '  50%     { box-shadow: 0 0 0 1px #FF2D7855, 0 0 40px #FF2D7844; }',
@@ -477,34 +616,35 @@
 
     // ── KARTA ── brand neutral (šedivý border), pulse glow jen decentní růžová
     '.boit-card {',
-    '  background: #0a0a0a; border: 1px solid #313846;',
+    '  background: var(--boit-card); border: 1px solid var(--boit-border);',
     '  max-width: 580px; width: 100%;',
     '  position: relative; overflow: hidden;',
-    '  animation: boitCardGlow 3s ease-in-out infinite;',
+    '  box-shadow: var(--boit-card-shadow);',
+    '  animation: var(--boit-card-animation);',
     '}',
     '.boit-scanline {',
     '  position: absolute; top: 0; left: 0; right: 0; height: 2px;',
-    '  background: linear-gradient(90deg, transparent, #D3FD2266, transparent);',
+    '  background: linear-gradient(90deg, transparent, var(--boit-scanline), transparent);',
     '  animation: boitScan 4s linear infinite; pointer-events: none; z-index: 10;',
     '}',
 
-    // ── HEADER ── BOIT logo zeleně, pill pravá strana růžová (jen threat indikátor)
+    // ── HEADER ── BOIT logo, pill pravá strana růžová (jen threat indikátor)
     '.boit-header {',
-    '  padding: 14px 22px; border-bottom: 1px solid #181B20;',
+    '  padding: 14px 22px; border-bottom: 1px solid var(--boit-divider);',
     '  display: flex; align-items: center; justify-content: space-between; gap: 16px;',
     '}',
-    '.boit-logo { color: #D3FD22; display: flex; align-items: center; }',
+    '.boit-logo { color: var(--boit-logo); display: flex; align-items: center; }',
     '.boit-logo svg { height: 20px; width: auto; display: block; }',
     '.boit-threat-pill {',
     '  display: flex; align-items: center; gap: 7px;',
-    '  background: #FF2D7815; border: 1px solid #FF2D7844;',
+    '  background: var(--boit-pink-soft); border: 1px solid var(--boit-pink-border);',
     '  padding: 5px 10px; font-size: 9px; font-weight: 700;',
-    '  color: #FF2D78; letter-spacing: 0.18em; text-transform: uppercase;',
+    '  color: var(--boit-pink); letter-spacing: 0.18em; text-transform: uppercase;',
     '  white-space: nowrap;',
     '}',
     '.boit-dot {',
-    '  width: 6px; height: 6px; border-radius: 50%; background: #FF2D78;',
-    '  box-shadow: 0 0 6px #FF2D78;',
+    '  width: 6px; height: 6px; border-radius: 50%; background: var(--boit-pink);',
+    '  box-shadow: 0 0 calc(6px * var(--boit-glow)) var(--boit-pink);',
     '  animation: boitDotBlink 1s step-end infinite;',
     '}',
 
@@ -513,42 +653,46 @@
 
     // Eyebrow fialová (akcent)
     '.boit-eyebrow {',
-    '  font-size: 9px; font-weight: 700; color: #B44FE8;',
+    '  font-size: 9px; font-weight: 700; color: var(--boit-purple);',
     '  letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 10px;',
     '}',
 
-    // Headline: bílá + růžový akcent na slově "Podvodný"
+    // Headline: text + růžový akcent na slově "Rizikový"
     '.boit-headline {',
     '  font-weight: 800; font-size: 28px; line-height: 1.1;',
-    '  color: #D9DCE1; margin-bottom: 6px;',
+    '  color: var(--boit-text); margin-bottom: 6px;',
     '}',
-    '.boit-headline span { color: #FF2D78; }',
+    '.boit-headline span { color: var(--boit-pink); }',
 
-    // Doména: šipka cyan, hodnota bílá
+    // Doména: šipka cyan, hodnota výrazně
     '.boit-domain-row {',
-    '  font-size: 12px; color: #A8B1C4; margin-bottom: 14px;',
+    '  font-size: 12px; color: var(--boit-text-dim); margin-bottom: 14px;',
     '  display: flex; align-items: center; gap: 8px;',
     '}',
-    '.boit-arrow { color: #00F5FF; font-weight: 700; }',
-    '.boit-domain-val { color: #fff; font-weight: 700; word-break: break-all; }',
+    '.boit-arrow { color: var(--boit-cyan); font-weight: 700; }',
+    '.boit-domain-val { color: var(--boit-domain); font-weight: 700; word-break: break-all; }',
 
-    '.boit-desc { font-size: 12px; color: #A8B1C4; line-height: 1.6; margin-bottom: 16px; }',
-    '.boit-desc strong { color: #D3FD22; font-weight: 700; }',
+    '.boit-desc { font-size: 12px; color: var(--boit-text-dim); line-height: 1.6; margin-bottom: 16px; }',
+    '.boit-desc strong {',
+    '  color: var(--boit-accent-text); font-weight: 700;',
+    '  background: var(--boit-marker); padding: 0 2px; margin: 0 -2px;',
+    '  -webkit-box-decoration-break: clone; box-decoration-break: clone;',
+    '}',
 
     // ── DETAILS (rozbalovací sekce) ──
     '.boit-details {',
     '  margin-top: 14px;',
-    '  border-top: 1px solid #181B20;',
+    '  border-top: 1px solid var(--boit-divider);',
     '  padding-top: 12px;',
     '}',
     '.boit-details[open] {',
-    '  border-top-color: #313846;',
+    '  border-top-color: var(--boit-border);',
     '}',
     '.boit-details-summary {',
     '  display: flex; align-items: center; gap: 8px;',
     '  padding: 6px 0; cursor: pointer;',
     '  font-size: 10px; font-weight: 700;',
-    '  color: #A8B1C4; letter-spacing: 0.15em;',
+    '  color: var(--boit-text-dim); letter-spacing: 0.15em;',
     '  text-transform: uppercase;',
     '  list-style: none;',
     '  user-select: none;',
@@ -556,23 +700,23 @@
     '}',
     'summary.boit-details-summary { display: flex; }',
     '.boit-details-summary::-webkit-details-marker { display: none; }',
-    '.boit-details-summary:hover { color: #D3FD22; }',
+    '.boit-details-summary:hover { color: var(--boit-accent-text); }',
     '.boit-details-caret {',
-    '  color: #5a6578; font-size: 14px; line-height: 1;',
+    '  color: var(--boit-text-mute); font-size: 14px; line-height: 1;',
     '  transition: transform 0.2s, color 0.15s;',
     '  display: inline-block;',
     '}',
     '.boit-details[open] .boit-details-caret {',
-    '  transform: rotate(90deg); color: #D3FD22;',
+    '  transform: rotate(90deg); color: var(--boit-accent-text);',
     '}',
-    '.boit-details-summary:hover .boit-details-caret { color: #D3FD22; }',
+    '.boit-details-summary:hover .boit-details-caret { color: var(--boit-accent-text); }',
     '.boit-details-label { flex: 1; }',
     '.boit-details-count {',
-    '  color: #FF2D78; font-weight: 700;',
+    '  color: var(--boit-pink); font-weight: 700;',
     '  letter-spacing: 0.1em;',
     '  padding: 2px 7px;',
-    '  border: 1px solid #FF2D7844;',
-    '  background: #FF2D7815;',
+    '  border: 1px solid var(--boit-pink-border);',
+    '  background: var(--boit-pink-soft);',
     '  font-size: 9px;',
     '}',
     '.boit-details-content {',
@@ -586,77 +730,79 @@
 
     // Signals sekce
     '.boit-signals-label {',
-    '  font-size: 9px; color: #B44FE8; letter-spacing: 0.2em;',
+    '  font-size: 9px; color: var(--boit-purple); letter-spacing: 0.2em;',
     '  text-transform: uppercase; margin-bottom: 8px; font-weight: 700;',
     '}',
     '.boit-signals { margin-bottom: 14px; }',
     '.boit-signal {',
     '  display: flex; gap: 10px; padding: 8px 12px;',
     '  border-left: 2px solid; margin-bottom: 3px;',
-    '  background: #181B20;',
+    '  background: var(--boit-signal-bg);',
     '}',
-    '.boit-signal--high { border-left-color: #FF2D78; }',
-    '.boit-signal--mid  { border-left-color: #FFD600; }',
-    '.boit-signal--low  { border-left-color: #00F5FF; }',
+    '.boit-signal--high { border-left-color: var(--boit-pink); }',
+    '.boit-signal--mid  { border-left-color: var(--boit-yellow); }',
+    '.boit-signal--low  { border-left-color: var(--boit-cyan); }',
     '.boit-signal-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }',
-    '.boit-signal--high .boit-signal-dot { background: #FF2D78; box-shadow: 0 0 5px #FF2D78; }',
-    '.boit-signal--mid  .boit-signal-dot { background: #FFD600; box-shadow: 0 0 5px #FFD600; }',
-    '.boit-signal--low  .boit-signal-dot { background: #00F5FF; box-shadow: 0 0 5px #00F5FF; }',
-    '.boit-signal-title { font-size: 11px; font-weight: 700; color: #D9DCE1; margin-bottom: 2px; }',
-    '.boit-signal-desc  { font-size: 10px; color: #A8B1C4; line-height: 1.5; }',
+    '.boit-signal--high .boit-signal-dot { background: var(--boit-pink); box-shadow: 0 0 calc(5px * var(--boit-glow)) var(--boit-pink); }',
+    '.boit-signal--mid  .boit-signal-dot { background: var(--boit-yellow); box-shadow: 0 0 calc(5px * var(--boit-glow)) var(--boit-yellow); }',
+    '.boit-signal--low  .boit-signal-dot { background: var(--boit-cyan); box-shadow: 0 0 calc(5px * var(--boit-glow)) var(--boit-cyan); }',
+    '.boit-signal-title { font-size: 11px; font-weight: 700; color: var(--boit-text); margin-bottom: 2px; }',
+    '.boit-signal-desc  { font-size: 10px; color: var(--boit-text-dim); line-height: 1.5; }',
 
     // Note box — fialový akcent
     '.boit-note {',
-    '  font-size: 10px; color: #A8B1C4; line-height: 1.6;',
-    '  padding: 9px 13px; border-left: 2px solid #B44FE8;',
-    '  background: #B44FE810; margin-bottom: 14px;',
+    '  font-size: 10px; color: var(--boit-text-dim); line-height: 1.6;',
+    '  padding: 9px 13px; border-left: 2px solid var(--boit-purple);',
+    '  background: var(--boit-note-bg); margin-bottom: 14px;',
     '}',
-    '.boit-link { color: #00F5FF; }',
+    '.boit-link { color: var(--boit-cyan); }',
 
     // ── TLAČÍTKA ──
     '.boit-actions { display: flex; gap: 8px; margin-bottom: 0; }',
     '.boit-actions-secondary { display: flex; gap: 8px; margin-top: 4px; }',
 
-    // Leave = hlavní CTA ZELENĚ (to je "dobrá" akce — odejít)
+    // Leave = hlavní CTA (tmavý: zelená, světlý: růžová)
     '.boit-btn-leave {',
-    '  flex: 1; background: #D3FD22; color: #0a0a0a; border: none;',
+    '  flex: 1; background: var(--boit-leave-fill); color: var(--boit-on-leave); border: none;',
     '  padding: 13px 16px; font-family: inherit;',
     '  font-weight: 700; font-size: 12px; letter-spacing: 0.06em;',
     '  cursor: pointer; text-transform: uppercase; transition: all 0.15s;',
     '}',
-    '.boit-btn-leave:hover { background: #e0ff50; transform: translateY(-1px); }',
+    '.boit-btn-leave:hover { background: var(--boit-leave-hover); transform: translateY(-1px); }',
 
-    // Proceed = nebezpečné = tlumeně červená/růžová outline
+    // Proceed = nebezpečné = tlumený outline
     '.boit-btn-proceed {',
-    '  flex: 1; background: transparent; color: #FF2D7899; border: 1px solid #FF2D7844;',
+    '  flex: 1; background: transparent; color: var(--boit-proceed-text); border: 1px solid var(--boit-proceed-border);',
     '  padding: 13px 16px; font-family: inherit;',
     '  font-size: 10px; letter-spacing: 0.06em;',
     '  cursor: pointer; text-transform: uppercase; transition: all 0.15s;',
     '}',
-    '.boit-btn-proceed:hover { color: #FF2D78; border-color: #FF2D78; }',
+    '.boit-btn-proceed:hover { color: var(--boit-proceed-hover); border-color: var(--boit-proceed-hover); }',
 
     // Ghost buttons — neutral, na hover se přebarví na fialovou
     '.boit-btn-ghost {',
-    '  flex: 1; background: transparent; color: #A8B1C4; border: 1px solid #313846;',
+    '  flex: 1; background: transparent; color: var(--boit-text-dim); border: 1px solid var(--boit-border);',
     '  padding: 10px 10px; font-family: inherit;',
     '  font-size: 9px; letter-spacing: 0.1em;',
     '  cursor: pointer; text-transform: uppercase; transition: all 0.15s;',
     '}',
-    '.boit-btn-ghost:hover { color: #B44FE8; border-color: #B44FE8; }',
+    '.boit-btn-ghost:hover { color: var(--boit-purple); border-color: var(--boit-purple); }',
 
-    // ── FOOTER ── hashtag zeleně (brand), sub info šedě
+    // ── FOOTER ── hashtag v brandu (tmavý: zelený text, světlý: zvýrazňovač)
     '.boit-footer {',
-    '  padding: 14px 22px; border-top: 1px solid #181B20;',
+    '  padding: 14px 22px; border-top: 1px solid var(--boit-divider);',
     '  display: flex; align-items: center; justify-content: space-between; gap: 16px;',
     '}',
     '.boit-footer-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }',
     '.boit-hashtag {',
-    '  font-size: 12px; font-weight: 800; color: #D3FD22;',
+    '  align-self: flex-start;',
+    '  font-size: 12px; font-weight: 800; color: var(--boit-accent-text);',
     '  letter-spacing: 0.02em;',
+    '  background: var(--boit-marker); padding: 0 2px; margin: 0 -2px;',
     '}',
     '.boit-footer-sub {',
-    '  font-size: 9px; color: #5a5a5a; letter-spacing: 0.06em;',
+    '  font-size: 9px; color: var(--boit-footer-sub); letter-spacing: 0.06em;',
     '}',
-    '.boit-footer-right { font-size: 9px; color: #313846; letter-spacing: 0.1em; white-space: nowrap; }'
+    '.boit-footer-right { font-size: 9px; color: var(--boit-version); letter-spacing: 0.1em; white-space: nowrap; }'
   ].join('\n');
 })();
