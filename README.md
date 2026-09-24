@@ -68,7 +68,7 @@ Když na takový web přijdete, obrazovka se zabluruje a uvidíte výrazné varo
   - Extrémní slevy (70% a víc)
 
 ### UI/UX
-- **Dynamická ikonka v toolbaru** — zelená = ok, růžová s vykřičníkem = pozor
+- **Dynamická ikonka v toolbaru** — oko v useknutém čtverci z loga BOIT; tmavá s neonem = ok, celá růžová se štítkem „!" = pozor
 - **Počítadlo ochrany** — kolikrát vás rozšíření varovalo (anonymně, lokálně)
 - **Rozbalovací detaily** — přehledné varování, podrobnosti pod „Více detailů"
 - **Cyberpunk vizuál** — BOIT brand identity, JetBrains Mono, neon palette
@@ -153,7 +153,8 @@ boit-rizikove-eshopy/
 
 NAHLASENI.md              # Kontakt pro nahlášení domény i žádost o vyřazení
 
-tests/                    # Node testy obou variant (background, texty varování, téma)
+tests/                    # Node testy obou variant (background, texty varování, téma, identita)
+design/icons/             # Zdrojová SVG ikon (16 px jako pixel art)
 docs/                     # Testovací protokol
 ```
 

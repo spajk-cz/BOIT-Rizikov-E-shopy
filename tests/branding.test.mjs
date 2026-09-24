@@ -78,3 +78,29 @@ test('světlý režim: okno doplňku je bílé i na rizikovém webu', () => {
   assert.equal(lightBlocks.length, 2, 'oba světlé bloky musí nastavovat --risky-bg');
   for (const declaration of lightBlocks) assert.match(declaration, /#FFFFFF/i);
 });
+
+test('ikony: správné rozměry, stejné v obou variantách, zdroj v design/icons', async (t) => {
+  /** Šířka a výška PNG z hlavičky IHDR. */
+  const pngSize = (buffer) => [buffer.readUInt32BE(16), buffer.readUInt32BE(20)];
+  const manifestIcons = manifest('Chrome').action.default_icon;
+
+  for (const state of ['safe', 'risky']) {
+    for (const size of [16, 32, 48, 128]) {
+      await t.test(`${state} ${size} px`, () => {
+        const chrome = readFileSync(`${repoRoot}Chrome/icons/icon-${state}-${size}.png`);
+        const firefox = readFileSync(`${repoRoot}Firefox/icons/icon-${state}-${size}.png`);
+        assert.deepEqual(pngSize(chrome), [size, size]);
+        assert.ok(chrome.equals(firefox), 'ikona se mezi variantami liší');
+      });
+    }
+    await t.test(`${state}: zdrojová SVG existují`, () => {
+      for (const suffix of ['', '-16', '-128']) {
+        assert.match(read(`design/icons/icon-${state}${suffix}.svg`), /<svg /);
+      }
+    });
+  }
+
+  await t.test('manifest odkazuje na existující ikony', () => {
+    for (const path of Object.values(manifestIcons)) statSync(`${repoRoot}Chrome/${path}`);
+  });
+});
