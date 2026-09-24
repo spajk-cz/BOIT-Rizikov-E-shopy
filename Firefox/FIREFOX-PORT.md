@@ -1,4 +1,4 @@
-# BOIT Rizikové E-shopy — Firefox Port
+# BOIT Rizikové weby — Firefox Port
 
 **Verze:** 1.7.0  
 **Cílový prohlížeč:** Firefox 140.0+ (desktop), Firefox for Android 142.0+  
@@ -102,5 +102,4 @@ Pro test na Firefox for Android: `about:debugging` na desktop FF, přes USB se n
 Doplněk půjde najít na:
 
 - `addons.mozilla.org/cs/firefox/addon/rizikove-eshopy/` (nebo podobný slug)
-- `boit.cz/nastroje/podvodne-weby` (vedle Chrome verze)
 - **Firefox for Android** v Add-ons sekci (auto sync s desktop verzí)

@@ -1,6 +1,6 @@
 /**
- * BOIT Rizikové E-shopy — content script
- * Detekuje rizikové e-shopy dle ČOI a zobrazí varování v BOIT brandu.
+ * BOIT Rizikové weby — content script
+ * Detekuje rizikové weby dle seznamů ČOI, SOI, ČTÚ a BOIT a zobrazí varování v BOIT brandu.
  */
 (function () {
   'use strict';
@@ -443,10 +443,10 @@
 
     '<div class="boit-footer">',
       '<div class="boit-footer-left">',
-        '<div class="boit-hashtag">#DělámeČeskoBezpečnější</div>',
-        '<div class="boit-footer-sub">BOIT Cyber Security · boit.cz/nastroje/podvodne-weby</div>',
+        '<div class="boit-hashtag">#BezpečnějšíČesko</div>',
+        '<div class="boit-footer-sub">BOIT Cyber Security · boit.cz</div>',
       '</div>',
-      '<div class="boit-footer-right">v1.10.0</div>',
+      '<div class="boit-footer-right">v1.11.0</div>',
     '</div>'
   ].join('');
 

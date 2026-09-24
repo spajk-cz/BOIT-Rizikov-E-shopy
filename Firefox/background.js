@@ -1,5 +1,5 @@
 /**
- * BOIT Rizikové E-shopy — background event page (Firefox MV3)
+ * BOIT Rizikové weby — background event page (Firefox MV3)
  * Security-hardened, AMO ready
  *
  * Pozn. k Firefox MV3:
@@ -695,7 +695,7 @@ async function setIconForTab(tabId, isRisky) {
   browser.action.setBadgeBackgroundColor({ tabId, color: '#FF2D78' }).catch(swallow);
   browser.action.setTitle({
     tabId,
-    title: isRisky ? 'BOIT: Web na seznamu rizikových webů' : 'BOIT Rizikové E-shopy — ochrana aktivní'
+    title: isRisky ? 'BOIT: Web na seznamu rizikových webů' : 'BOIT Rizikové weby — ochrana aktivní'
   }).catch(swallow);
 }
 

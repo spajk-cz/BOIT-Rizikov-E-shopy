@@ -1,5 +1,5 @@
 /**
- * BOIT Rizikové E-shopy — background service worker
+ * BOIT Rizikové weby — background service worker
  * Security-hardened, Web Store ready
  */
 
@@ -684,7 +684,7 @@ function setIconForTab(tabId, isRisky) {
     chrome.action.setBadgeBackgroundColor({ tabId, color: "#FF2D78" }, consumeLastError);
     chrome.action.setTitle({
       tabId,
-      title: isRisky ? "BOIT: Web na seznamu rizikových webů" : "BOIT Rizikové E-shopy — ochrana aktivní"
+      title: isRisky ? "BOIT: Web na seznamu rizikových webů" : "BOIT Rizikové weby — ochrana aktivní"
     }, consumeLastError);
   });
 }

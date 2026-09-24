@@ -1,20 +1,20 @@
 <div align="center">
 
 <p>
-  <img src="https://lh3.googleusercontent.com/ljcAgmvfLT6gKeOU6OBVOw_YUWzP6s3M-pOJgrcx8i8KQM1d_UbZ5cO8NBHkWxwTIc535h4fKYCVbN3wlfT0WJ4k3A=s1600-w1600-h1000" alt="BOIT Rizikové E-shopy screenshot" width="100%" />
+  <img src="https://lh3.googleusercontent.com/ljcAgmvfLT6gKeOU6OBVOw_YUWzP6s3M-pOJgrcx8i8KQM1d_UbZ5cO8NBHkWxwTIc535h4fKYCVbN3wlfT0WJ4k3A=s1600-w1600-h1000" alt="BOIT Rizikové weby screenshot" width="100%" />
 </p>
 
-# BOIT Rizikové E-shopy
+# BOIT Rizikové weby
 
 **Prohlížečové rozšíření, které vás varuje před rizikovými weby ze seznamů České obchodní inspekce (ČOI), Slovenskej obchodnej inšpekcie (SOI), Českého telekomunikačního úřadu (ČTÚ) a ze seznamu BOIT — a detekuje další podezřelé signály přímo na stránce.**
 
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-v1.10.0-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
-[![Firefox Add-on](https://img.shields.io/badge/Firefox%20Add--on-v1.10.0-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-v1.11.0-D3FD22?style=for-the-badge&logo=googlechrome&logoColor=black)](https://chromewebstore.google.com/detail/boit-rizikov%C3%A9-e-shopy/pmjfmpoofdklhmceaadcoilkkhpmaapb)
+[![Firefox Add-on](https://img.shields.io/badge/Firefox%20Add--on-v1.11.0-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/cs/firefox/addon/boit-rizikov%C3%A9-e-shopy/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-FF2D78?style=for-the-badge)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-B44FE8?style=for-the-badge)](https://developer.chrome.com/docs/extensions/develop/migrate)
 [![Made by BOIT](https://img.shields.io/badge/Made%20by-BOIT%20Cyber%20Security-D3FC23?style=for-the-badge)](https://boit.cz)
 
-🇨🇿 + 🇸🇰  ·  **\#DělámeČeskoBezpečnější**
+🇨🇿 + 🇸🇰  ·  **\#BezpečnějšíČesko**
 
 </div>
 
@@ -30,7 +30,7 @@
 
 Před každýma Vánocema varujeme na školeních lidi před rizikovými e-shopy. Roky jsme k tomu používali databázi ČOI + jeden starší prohlížečový doplněk — ten ale dávno není udržovaný. Tak jsme postavili nový. A od verze 1.7 podporujeme i **slovenský trh** přes seznam SOI.
 
-**BOIT Rizikové E-shopy** v reálném čase porovnává navštívené weby se čtyřmi seznamy:
+**BOIT Rizikové weby** v reálném čase porovnává navštívené weby se čtyřmi seznamy:
 
 - 🇨🇿 [**Česká obchodní inspekce**](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/) (ČOI) — oficiální seznam úřadu
 - 🇸🇰 [**Slovenská obchodná inšpekcia**](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody) (SOI) — oficiální seznam úřadu
@@ -266,6 +266,7 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 - [x] **v1.8** — 🛡️ Vlastní BOIT seznam jako třetí zdroj + odolná per-source cache
 - [x] **v1.9** — 🏛️ Seznam blokovaných webů ČTÚ jako čtvrtý zdroj
 - [x] **v1.10** — 🌗 Tmavý a světlý režim podle prohlížeče + ruční přepínač
+- [x] **v1.11** — 👁️ Nový název BOIT Rizikové weby a nové ikony
 - [ ] **v2.0** — Detekce typosquatu (Levenshtein vůči TOP 100 CZ/SK e-shopů)
 - [ ] **v2.1** — Whois lookup pro nedávno zaregistrované domény
 - [ ] **v2.2** — Crowdsourced report API (volitelný opt-in)
@@ -274,7 +275,14 @@ Issues a feature requesty vítány. Zvlášť pokud najdete:
 
 ## Changelog
 
-### v1.10.0 (současná)
+### v1.11.0 (současná)
+- 🏷️ **Nový název: BOIT Rizikové weby** — doplněk dávno nehlídá jen e-shopy (ČTÚ vede i hazard a nelegální léčiva); ID doplňku i repozitář zůstávají, aktualizace dorazí stávajícím uživatelům
+- 👁️ **Nové ikony** — oko v useknutém čtverci z loga BOIT; bezpečný web tmavá dlaždice s neonem, rizikový celá růžová a Chrome přidá štítek „!"; čitelné na světlé i tmavé liště
+- ⚪ Ve světlém režimu je okno doplňku i na rizikovém webu čistě bílé (dřív růžově podbarvené)
+- 🔗 Z patičky varování odstraněn odkaz na neexistující stránku
+- #️⃣ Nový hashtag **#BezpečnějšíČesko**
+
+### v1.10.0
 - 🌗 **Tmavý a světlý režim** — popup i varovací overlay se řídí tématem prohlížeče (`prefers-color-scheme`)
 - 🎚️ **Přepínač v hlavičce popupu** `A | ☀ | ☾` — Auto podle prohlížeče, nebo ručně světlý či tmavý; volba platí i pro overlay a projeví se na otevřeném varování okamžitě
 - ♿ Přepínač je přístupná radio skupina (ovládání šipkami, `aria-checked`); ručně zvolené téma při otevření popupu neproblikne
@@ -356,6 +364,6 @@ To znamená: použij, fork, modifikuj, prodávej. Jen na nás laskavě nezapome�
 
 **Sdílej dál — čím víc lidí ho má, tím méně peněz teče podvodníkům.**
 
-### \#DělámeČeskoBezpečnější
+### \#BezpečnějšíČesko
 
 </div>

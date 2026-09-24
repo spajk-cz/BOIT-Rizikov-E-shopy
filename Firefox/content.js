@@ -1,6 +1,6 @@
 /**
- * BOIT Rizikové E-shopy — content script (Firefox MV3)
- * Detekuje rizikové e-shopy dle ČOI/SOI a zobrazí varování v BOIT brandu.
+ * BOIT Rizikové weby — content script (Firefox MV3)
+ * Detekuje rizikové weby dle seznamů ČOI, SOI, ČTÚ a BOIT a zobrazí varování v BOIT brandu.
  *
  * Pozn. k Firefoxu: používáme browser.runtime.sendMessage (vrací Promise).
  * Overlay (closed Shadow DOM, MutationObserver, !important blur) je čisté
@@ -471,10 +471,10 @@
 
     '<div class="boit-footer">',
       '<div class="boit-footer-left">',
-        '<div class="boit-hashtag">#DělámeČeskoBezpečnější</div>',
-        '<div class="boit-footer-sub">BOIT Cyber Security · boit.cz/nastroje/podvodne-weby</div>',
+        '<div class="boit-hashtag">#BezpečnějšíČesko</div>',
+        '<div class="boit-footer-sub">BOIT Cyber Security · boit.cz</div>',
       '</div>',
-      '<div class="boit-footer-right">v1.10.0</div>',
+      '<div class="boit-footer-right">v1.11.0</div>',
     '</div>'
   ].join('');
 

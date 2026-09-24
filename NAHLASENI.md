@@ -2,7 +2,7 @@
 
 Kontakt: **doplnek@boit.cz**
 
-Doplněk **BOIT Rizikové E-shopy** porovnává navštívené weby se čtyřmi seznamy —
+Doplněk **BOIT Rizikové weby** porovnává navštívené weby se čtyřmi seznamy —
 [ČOI](https://coi.gov.cz/pro-spotrebitele/rizikove-e-shopy/),
 [SOI](https://www.soi.sk/informacie-pre-verejnost/internetove-obchody/rizikove-internetove-obchody),
 [ČTÚ](https://ctu.gov.cz/vyhledavaci-databaze/blokovane-weby)

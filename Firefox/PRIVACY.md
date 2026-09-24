@@ -1,8 +1,8 @@
 # Zásady ochrany osobních údajů
 
-## BOIT Rizikové E-shopy (Chrome extension)
+## BOIT Rizikové weby (Chrome extension)
 
-**Poslední aktualizace:** 24. 9. 2026 (verze 1.10.0)
+**Poslední aktualizace:** 24. 9. 2026 (verze 1.11.0)
 
 ---
 
